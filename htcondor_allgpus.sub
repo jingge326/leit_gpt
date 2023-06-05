@@ -1,0 +1,7 @@
+executable   = ./run_main.sh
+arguments    = $(args)
+log          = ./log/htcondor_run.log
+output       = ./log/stdout_run_main.txt
+error        = ./log/stderr_run_main.txt
+REQUEST_GPUs = 1
+queue args from htcondor_args.txt

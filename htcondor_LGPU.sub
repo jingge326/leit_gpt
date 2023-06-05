@@ -1,0 +1,8 @@
+executable   = ./run_main.sh
+arguments    = $(args)
+log          = ./log/htcondor_run.log
+output       = ./log/stdout_run_main.txt
+error        = ./log/stderr_run_main.txt
+REQUEST_GPUs = 1
+requirements = ((TARGET.Machine == "pascal-node01.l3s.intra") || (TARGET.Machine == "pascal-node02.l3s.intra") || (TARGET.Machine == "pascal-node03.l3s.intra"))
+queue args from htcondor_args.txt

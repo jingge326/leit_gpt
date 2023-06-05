@@ -1,0 +1,43 @@
+name: leit
+channels:
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1=main
+  - brotlipy=0.7.0=py310h7f8727e_1002
+  - bzip2=1.0.8=h7b6447c_0
+  - ca-certificates=2022.3.29=h06a4308_1
+  - certifi=2021.5.30=py310h06a4308_0
+  - cffi=1.15.0=py310hd667e15_1
+  - conda=4.12.0=py310h06a4308_0
+  - conda-package-handling=1.8.1=py310h7f8727e_0
+  - cryptography=36.0.0=py310h9ce1e76_0
+  - ld_impl_linux-64=2.35.1=h7274673_9
+  - libffi=3.3=he6710b0_2
+  - libgcc-ng=9.1.0=hdf63c60_0
+  - libstdcxx-ng=9.1.0=hdf63c60_0
+  - libuuid=1.0.3=h7f8727e_2
+  - ncurses=6.3=h7f8727e_2
+  - openssl=1.1.1n=h7f8727e_0
+  - pip=21.2.4=py310h06a4308_0
+  - pycosat=0.6.3=py310h7f8727e_0
+  - pysocks=1.7.1=py310h06a4308_0
+  - python=3.10.4=h12debd9_0
+  - readline=8.1.2=h7f8727e_1
+  - ruamel_yaml=0.15.100=py310h7f8727e_0
+  - setuptools=61.2.0=py310h06a4308_0
+  - sqlite=3.38.2=hc218d9a_0
+  - tk=8.6.11=h1ccaba5_0
+  - tqdm=4.64.0=py310h06a4308_0
+  - tzdata=2022a=hda174b7_0
+  - urllib3=1.26.9=py310h06a4308_0
+  - xz=5.2.5=h7b6447c_0
+  - yaml=0.2.5=h7b6447c_0
+  - zlib=1.2.12=h7f8727e_2
+  - pip:
+    - charset-normalizer==2.0.4
+    - idna==3.3
+    - pycparser==2.21
+    - pyopenssl==22.0.0
+    - requests==2.27.1
+    - wheel==0.37.1
+prefix: /opt/conda

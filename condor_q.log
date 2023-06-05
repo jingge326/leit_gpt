@@ -1,0 +1,29 @@
+
+
+-- Schedd: pascal-condor01.l3s.intra : <10.10.1.131:9618?... @ 04/14/23 16:32:19
+ ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD
+4439.6   xiao            4/14 13:30   0+03:01:45 R  0   2686 run_main.sh --random-state=1;--ml-task=extrap;--leit-model=gob;--ivp-solver=ode;--lr-decay=0.33;--odenet=gru;--rnn-hidden-dim=100;--time-scale=constant;--time-constant=2880;--time-max=2879;--data=eicu;--variable-num=14;--test-info=final
+4439.7   xiao            4/14 13:30   0+03:01:45 R  0   2686 run_main.sh --random-state=2;--ml-task=extrap;--leit-model=gob;--ivp-solver=ode;--lr-decay=0.33;--odenet=gru;--rnn-hidden-dim=100;--time-scale=constant;--time-constant=2880;--time-max=2879;--data=eicu;--variable-num=14;--test-info=final
+4439.8   xiao            4/14 13:30   0+03:01:45 R  0   2686 run_main.sh --random-state=3;--ml-task=extrap;--leit-model=gob;--ivp-solver=ode;--lr-decay=0.33;--odenet=gru;--rnn-hidden-dim=100;--time-scale=constant;--time-constant=2880;--time-max=2879;--data=eicu;--variable-num=14;--test-info=final
+4439.12  xiao            4/14 13:30   0+03:01:44 R  0   2930 run_main.sh --random-state=1;--ml-task=extrap;--leit-model=cru;--extrap-full;--time-scale=constant;--time-constant=2880;--time-max=2879;--data=eicu;--variable-num=14;--test-info=final
+4439.13  xiao            4/14 13:30   0+03:01:44 R  0   2930 run_main.sh --random-state=2;--ml-task=extrap;--leit-model=cru;--extrap-full;--time-scale=constant;--time-constant=2880;--time-max=2879;--data=eicu;--variable-num=14;--test-info=final
+4439.15  xiao            4/14 13:30   0+03:01:44 R  0   2686 run_main.sh --random-state=1;--ml-task=extrap;--leit-model=red_vae;--ivp-solver=ode;--time-scale=constant;--time-constant=2880;--time-max=2879;--data=eicu;--variable-num=14;--fast-llloss;--test-info=final
+4439.16  xiao            4/14 13:30   0+03:01:44 R  0   2686 run_main.sh --random-state=2;--ml-task=extrap;--leit-model=red_vae;--ivp-solver=ode;--time-scale=constant;--time-constant=2880;--time-max=2879;--data=eicu;--variable-num=14;--fast-llloss;--test-info=final
+4439.17  xiao            4/14 13:30   0+03:01:44 R  0   2686 run_main.sh --random-state=3;--ml-task=extrap;--leit-model=red_vae;--ivp-solver=ode;--time-scale=constant;--time-constant=2880;--time-max=2879;--data=eicu;--variable-num=14;--fast-llloss;--test-info=final
+4439.24  xiao            4/14 13:30   0+02:24:48 R  0   2442 run_main.sh --random-state=1;--leit-model=mtan;--ratio-ce=100;--time-scale=self_max;--lr=0.0001;--data=eicu;--num-times=1440;--time-max=1439;--variable-num=14;--test-info=final
+4439.25  xiao            4/14 13:30   0+02:20:48 R  0   2442 run_main.sh --random-state=2;--leit-model=mtan;--ratio-ce=100;--time-scale=self_max;--lr=0.0001;--data=eicu;--num-times=1440;--time-max=1439;--variable-num=14;--test-info=final
+4439.26  xiao            4/14 13:30   0+02:18:48 R  0   2686 run_main.sh --random-state=3;--leit-model=mtan;--ratio-ce=100;--time-scale=self_max;--lr=0.0001;--data=eicu;--num-times=1440;--time-max=1439;--variable-num=14;--test-info=final
+4439.33  xiao            4/14 13:30   0+01:49:47 R  0   2198 run_main.sh --random-state=1;--leit-model=red_vae;--ivp-solver=ode;--ratio-ce=100;--data=eicu;--num-times=1440;--time-max=1439;--variable-num=14;--fast-llloss;--test-info=final
+4439.34  xiao            4/14 13:30   0+01:43:47 R  0   2198 run_main.sh --random-state=2;--leit-model=red_vae;--ivp-solver=ode;--ratio-ce=100;--data=eicu;--num-times=1440;--time-max=1439;--variable-num=14;--fast-llloss;--test-info=final
+4439.35  xiao            4/14 13:30   0+01:28:46 R  0   2442 run_main.sh --random-state=3;--leit-model=red_vae;--ivp-solver=ode;--ratio-ce=100;--data=eicu;--num-times=1440;--time-max=1439;--variable-num=14;--fast-llloss;--test-info=final
+4444.0   xiao            4/14 16:16   0+00:15:46 R  0   391. run_main.sh --random-state=1;--ml-task=extrap;--time-scale=constant;--time-constant=2880;--data=p12;--variable-num=41;--time-max=2880;--num-times=2881;--ivp-solver=ode;--patience=10;--test-info=klw
+4444.1   xiao            4/14 16:16   0+00:12:46 R  0    0.0 run_main.sh --random-state=2;--ml-task=extrap;--time-scale=constant;--time-constant=2880;--data=p12;--variable-num=41;--time-max=2880;--num-times=2881;--ivp-solver=ode;--patience=10;--test-info=klw
+4444.2   xiao            4/14 16:16   0+00:12:46 R  0    0.0 run_main.sh --random-state=3;--ml-task=extrap;--time-scale=constant;--time-constant=2880;--data=p12;--variable-num=41;--time-max=2880;--num-times=2881;--ivp-solver=ode;--patience=10;--test-info=klw
+4444.6   xiao            4/14 16:16   0+00:03:44 R  0    0.0 run_main.sh --random-state=1;--ivp-solver=ode;--ml-task=extrap;--time-scale=constant;--time-constant=2880;--time-max=2879;--data=m4_smooth;--patience=10;--test-info=klw
+4444.7   xiao            4/14 16:16   0+00:00:00 I  0    0.0 run_main.sh --random-state=2;--ivp-solver=ode;--ml-task=extrap;--time-scale=constant;--time-constant=2880;--time-max=2879;--data=m4_smooth;--patience=10;--test-info=klw
+4444.8   xiao            4/14 16:16   0+00:00:00 I  0    0.0 run_main.sh --random-state=3;--ivp-solver=ode;--ml-task=extrap;--time-scale=constant;--time-constant=2880;--time-max=2879;--data=m4_smooth;--patience=10;--test-info=klw
+
+Total for query: 20 jobs; 0 completed, 0 removed, 2 idle, 18 running, 0 held, 0 suspended 
+Total for xiao: 20 jobs; 0 completed, 0 removed, 2 idle, 18 running, 0 held, 0 suspended 
+Total for all users: 71 jobs; 0 completed, 0 removed, 17 idle, 39 running, 15 held, 0 suspended
+

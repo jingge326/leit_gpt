@@ -1,0 +1,177 @@
+IVPVAE(
+  (embedding_nn): Embedding_GNN(
+    (dilator): DilatorTanh(
+      (linear): Linear(in_features=1, out_features=20, bias=False)
+      (tanh): Tanh()
+    )
+    (compressor): CompressorTanh(
+      (linear): Linear(in_features=20, out_features=1, bias=False)
+      (tanh): Tanh()
+    )
+    (gc): GraphConstructor(
+      (emb1): Embedding(102, 20)
+      (emb2): Embedding(102, 20)
+      (lin1): Linear(in_features=20, out_features=20, bias=True)
+      (lin2): Linear(in_features=20, out_features=20, bias=True)
+    )
+    (gcn): GCNConv()
+    (latent_mapper): Sequential(
+      (0): Linear(in_features=102, out_features=40, bias=True)
+    )
+  )
+  (encoder_z0): Encoder_z0_ODE_RNN(
+    (lstm): LSTMCell(40, 40)
+    (z0_diffeq_solver): SolverWrapper(
+      (solver): ResNetFlow(
+        (layers): ModuleList(
+          (0): ResNetFlow(
+            (blocks): ModuleList(
+              (0): ResNetFlowBlock(
+                (net): MLP(
+                  (net): Sequential(
+                    (0): Linear(in_features=41, out_features=50, bias=True)
+                    (1): ReLU()
+                    (2): Linear(in_features=50, out_features=50, bias=True)
+                    (3): ReLU()
+                    (4): Linear(in_features=50, out_features=50, bias=True)
+                    (5): ReLU()
+                    (6): Linear(in_features=50, out_features=40, bias=True)
+                  )
+                )
+                (time_net): TimeTanh()
+              )
+              (1): ResNetFlowBlock(
+                (net): MLP(
+                  (net): Sequential(
+                    (0): Linear(in_features=41, out_features=50, bias=True)
+                    (1): ReLU()
+                    (2): Linear(in_features=50, out_features=50, bias=True)
+                    (3): ReLU()
+                    (4): Linear(in_features=50, out_features=50, bias=True)
+                    (5): ReLU()
+                    (6): Linear(in_features=50, out_features=40, bias=True)
+                  )
+                )
+                (time_net): TimeTanh()
+              )
+            )
+          )
+          (1): ResNetFlow(
+            (blocks): ModuleList(
+              (0): ResNetFlowBlock(
+                (net): MLP(
+                  (net): Sequential(
+                    (0): Linear(in_features=41, out_features=50, bias=True)
+                    (1): ReLU()
+                    (2): Linear(in_features=50, out_features=50, bias=True)
+                    (3): ReLU()
+                    (4): Linear(in_features=50, out_features=50, bias=True)
+                    (5): ReLU()
+                    (6): Linear(in_features=50, out_features=40, bias=True)
+                  )
+                )
+                (time_net): TimeTanh()
+              )
+              (1): ResNetFlowBlock(
+                (net): MLP(
+                  (net): Sequential(
+                    (0): Linear(in_features=41, out_features=50, bias=True)
+                    (1): ReLU()
+                    (2): Linear(in_features=50, out_features=50, bias=True)
+                    (3): ReLU()
+                    (4): Linear(in_features=50, out_features=50, bias=True)
+                    (5): ReLU()
+                    (6): Linear(in_features=50, out_features=40, bias=True)
+                  )
+                )
+                (time_net): TimeTanh()
+              )
+            )
+          )
+        )
+      )
+    )
+    (s2d_mapper): State2Distribution_Mapper(
+      (s2d_mapper): Sequential(
+        (0): Linear(in_features=40, out_features=100, bias=True)
+        (1): Tanh()
+        (2): Linear(in_features=100, out_features=40, bias=True)
+      )
+    )
+  )
+  (diffeq_solver): SolverWrapper(
+    (solver): ResNetFlow(
+      (layers): ModuleList(
+        (0): ResNetFlow(
+          (blocks): ModuleList(
+            (0): ResNetFlowBlock(
+              (net): MLP(
+                (net): Sequential(
+                  (0): Linear(in_features=21, out_features=50, bias=True)
+                  (1): ReLU()
+                  (2): Linear(in_features=50, out_features=50, bias=True)
+                  (3): ReLU()
+                  (4): Linear(in_features=50, out_features=50, bias=True)
+                  (5): ReLU()
+                  (6): Linear(in_features=50, out_features=20, bias=True)
+                )
+              )
+              (time_net): TimeTanh()
+            )
+            (1): ResNetFlowBlock(
+              (net): MLP(
+                (net): Sequential(
+                  (0): Linear(in_features=21, out_features=50, bias=True)
+                  (1): ReLU()
+                  (2): Linear(in_features=50, out_features=50, bias=True)
+                  (3): ReLU()
+                  (4): Linear(in_features=50, out_features=50, bias=True)
+                  (5): ReLU()
+                  (6): Linear(in_features=50, out_features=20, bias=True)
+                )
+              )
+              (time_net): TimeTanh()
+            )
+          )
+        )
+        (1): ResNetFlow(
+          (blocks): ModuleList(
+            (0): ResNetFlowBlock(
+              (net): MLP(
+                (net): Sequential(
+                  (0): Linear(in_features=21, out_features=50, bias=True)
+                  (1): ReLU()
+                  (2): Linear(in_features=50, out_features=50, bias=True)
+                  (3): ReLU()
+                  (4): Linear(in_features=50, out_features=50, bias=True)
+                  (5): ReLU()
+                  (6): Linear(in_features=50, out_features=20, bias=True)
+                )
+              )
+              (time_net): TimeTanh()
+            )
+            (1): ResNetFlowBlock(
+              (net): MLP(
+                (net): Sequential(
+                  (0): Linear(in_features=21, out_features=50, bias=True)
+                  (1): ReLU()
+                  (2): Linear(in_features=50, out_features=50, bias=True)
+                  (3): ReLU()
+                  (4): Linear(in_features=50, out_features=50, bias=True)
+                  (5): ReLU()
+                  (6): Linear(in_features=50, out_features=20, bias=True)
+                )
+              )
+              (time_net): TimeTanh()
+            )
+          )
+        )
+      )
+    )
+  )
+  (reconst_mapper): Reconst_Mapper(
+    (reconst_mapper): Sequential(
+      (0): Linear(in_features=20, out_features=102, bias=True)
+    )
+  )
+)
