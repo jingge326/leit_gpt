@@ -674,6 +674,8 @@ def collate_fn_biclass(batch, num_vars, args):
             max_len-len_t, dtype=np.float32)], 0) for times, len_t in zip(times_list, len_list)], 0,).astype(np.float32)).to(device)
 
         combined_truth = torch.tensor(np.array(truth_list)).to(device)
+        
+        exist_times = combined_masks.sum(dim=-1).gt(0)
 
         lengths = torch.tensor(len_list).to(device)
 
@@ -690,6 +692,7 @@ def collate_fn_biclass(batch, num_vars, args):
             "data_in": combined_values,
             "mask_in": combined_masks,
             "truth": combined_truth,
+            "exist_times": exist_times,
             "lengths": lengths
         }
 

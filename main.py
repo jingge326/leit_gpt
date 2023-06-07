@@ -15,8 +15,8 @@ parser.add_argument("--random-state", type=int, default=1, help="Random seed")
 parser.add_argument("--proj-path", type=str,
                     default=str(Path(__file__).parents[0]))
 parser.add_argument("--test-info", default="extra_24")
-parser.add_argument("--leit-model", default="ivp_vae",
-                    choices=["ivp_vae", "ivp_vae_old", "red_vae", "classic_rnn", "mtan",
+parser.add_argument("--leit-model", default="gpts",
+                    choices=["gpts", "ivp_vae", "ivp_vae_old", "red_vae", "classic_rnn", "mtan",
                              "raindrop", "ckconv", "cru", "gob", "grud",
                              "ivp_auto", "att_ivp_vae", "ivp_auto"])
 parser.add_argument("--model-type", default="initialize",
@@ -38,7 +38,7 @@ parser.add_argument("--lr-decay", type=float, default=0.5,
                     help="Multiplicative lr decay factor")
 parser.add_argument("--clip-gradient", action='store_false')
 parser.add_argument("--clip", type=float, default=1)
-parser.add_argument("--not-vae", action='store_true')
+parser.add_argument("--not-vae", action='store_false')
 parser.add_argument("--para-file-type", default="pl_ckpt")
 parser.add_argument("--freeze-opt", default="unfreeze",
                     choices=["unfreeze", "odevae", "embedding", "flow", "encoder_flow", "decoder"])
@@ -49,7 +49,7 @@ parser.add_argument("--log-tool", default="logging",
                     choices=["logging", "wandb", "all"])
 
 # Args for datasets
-parser.add_argument("--data", default="m4_mortality_100", help="Dataset name",
+parser.add_argument("--data", default="p12", help="Dataset name",
                     choices=["m4_general", "p12", "p19_sepsis", "person_activity",
                              "m4_mortality_100", "m4_mortality_250", "m4_mortality_500", "m4_mortality_1000",
                              "m4_mortality_2000", "m4_mortality_3000", "m4_next", "m4_next_100", "m4_next_250",
@@ -57,7 +57,7 @@ parser.add_argument("--data", default="m4_mortality_100", help="Dataset name",
                              "m4_smooth"])
 parser.add_argument("--num-samples", type=int, default=-1)
 parser.add_argument("--variable-num", type=int,
-                    default=96, choices=[96, 41, 34, 14])
+                    default=41, choices=[96, 41, 34, 14])
 parser.add_argument("--ts-full", action='store_true')
 parser.add_argument("--del-std5", action='store_true')
 parser.add_argument("--time-scale", default="time_max",
@@ -114,6 +114,7 @@ parser.add_argument("--time-hidden-dim", type=int, default=8,
 parser.add_argument("--k-iwae", type=int, default=3)
 parser.add_argument("--kl-coef", type=float, default=1.0)
 parser.add_argument("--latent-dim", type=int, default=20)
+parser.add_argument("--attn-dim", type=int, default=20)
 parser.add_argument("--encoder-dim", type=int, default=20)
 parser.add_argument("--classifier-input", default="z0")
 parser.add_argument("--train-w-reconstr", action='store_false')
@@ -253,6 +254,11 @@ parser.add_argument('--gob_p_hidden', type=int, default=25,
 parser.add_argument('--invertible', type=int, default=1,
                     help='If network is invertible', choices=[0, 1])
 
+# GPTS specific args
+parser.add_argument("mhatt_n_layer", type=int, default=6)
+parser.add_argument("n_embd", type=int, default=768)
+
+
 if __name__ == "__main__":
     args = parser.parse_args()
     if args.ml_task == 'extrap':
@@ -264,12 +270,12 @@ if __name__ == "__main__":
     else:
         raise ValueError("Unknown")
 
-    try:
-        experiment.run()
-        experiment.finish()
-    except Exception:
-        with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
-            print(traceback.format_exc(), file=fout)
+    # try:
+    #     experiment.run()
+    #     experiment.finish()
+    # except Exception:
+    #     with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
+    #         print(traceback.format_exc(), file=fout)
 
-    # experiment.run()
-    # experiment.finish()
+    experiment.run()
+    experiment.finish()

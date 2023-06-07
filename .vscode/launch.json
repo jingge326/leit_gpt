@@ -10,6 +10,27 @@
             "justMyCode": true
         },
         {
+            "name": "P12-BiClass-GPTS",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": [
+                "--data",
+                "m4_smooth",
+                "--variable-num",
+                "96",
+                "--time-max",
+                "1439",
+                "--num-times",
+                "1440",
+                "--test-info",
+                "test",
+                "--log-tool",
+                "wandb"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
             "name": "P12-Extrap24H-IVPAuto",
             "type": "python",
             "request": "launch",

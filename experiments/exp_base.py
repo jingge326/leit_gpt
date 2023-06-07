@@ -327,7 +327,8 @@ class BaseExperiment:
 
                 self.logger.info(
                     f'[epoch={epoch:04d}|iter={iteration:04d}] train_loss={train_loss:.5f}')
-                wandb.log({"train_loss": train_loss})
+                if self.args.log_tool == 'wandb':
+                    wandb.log({"train_loss": train_loss})
                 iteration += 1
 
             epoch_duration = time.time() - start_time
