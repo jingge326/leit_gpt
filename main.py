@@ -2,6 +2,7 @@ from pathlib import Path
 import traceback
 import argparse
 
+from experiments.exp_pretrain import Exp_Pretrain
 from experiments.exp_biclass import Exp_BiClass
 from experiments.exp_extrap import Exp_Extrap
 from experiments.exp_interp import Exp_Interp
@@ -50,14 +51,14 @@ parser.add_argument("--log-tool", default="logging",
 
 # Args for datasets
 parser.add_argument("--data", default="p12", help="Dataset name",
-                    choices=["m4_general", "p12", "p19_sepsis", "person_activity",
+                    choices=["m4_gpts", "m4_general", "p12", "p19_sepsis", "person_activity",
                              "m4_mortality_100", "m4_mortality_250", "m4_mortality_500", "m4_mortality_1000",
                              "m4_mortality_2000", "m4_mortality_3000", "m4_next", "m4_next_100", "m4_next_250",
                              "m4_next_500", "m4_next_1000", "m4_next_2000", "m4_next_3000", "eicu", "m4",
                              "m4_smooth"])
 parser.add_argument("--num-samples", type=int, default=-1)
 parser.add_argument("--variable-num", type=int,
-                    default=41, choices=[96, 41, 34, 14])
+                    default=41, choices=[96, 41, 34, 14, 113])
 parser.add_argument("--ts-full", action='store_true')
 parser.add_argument("--del-std5", action='store_true')
 parser.add_argument("--time-scale", default="time_max",
@@ -68,7 +69,7 @@ parser.add_argument("--first-dim", default="batch",
 parser.add_argument("--batch-size", type=int, default=50)
 parser.add_argument("--t-offset", type=float, default=0.1)
 parser.add_argument("--ml-task", default="biclass",
-                    choices=["biclass", "extrap", "interp", "length"])
+                    choices=["biclass", "extrap", "interp", "length", "pretrain"])
 parser.add_argument("--extrap-full", action='store_true')
 parser.add_argument("--p12-classify", action='store_false')
 parser.add_argument("--down-times", type=int, default=1,
@@ -255,8 +256,10 @@ parser.add_argument('--invertible', type=int, default=1,
                     help='If network is invertible', choices=[0, 1])
 
 # GPTS specific args
-parser.add_argument("mhatt_n_layer", type=int, default=6)
-parser.add_argument("n_embd", type=int, default=768)
+parser.add_argument("--mhatt_n_layer", type=int, default=6)
+parser.add_argument("--n_embd", type=int, default=768)
+parser.add_argument("--seq_len_min", type=int, default=10)
+parser.add_argument("--seq_len_max", type=int, default=1024)
 
 
 if __name__ == "__main__":
@@ -267,6 +270,8 @@ if __name__ == "__main__":
         experiment = Exp_Interp(args)
     elif args.ml_task == 'biclass':
         experiment = Exp_BiClass(args)
+    elif args.ml_task == 'pretrain':
+        experiment = Exp_Pretrain(args)
     else:
         raise ValueError("Unknown")
 

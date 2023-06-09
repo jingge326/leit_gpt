@@ -285,12 +285,10 @@ class GPTS(nn.Module):
     def __init__(self, args):
         super().__init__()
         self.args = args
-
+        self.input_lyr = nn.Linear(args.variable_num * 2 + args.embed_time, args.n_embd)
         self.dropout = nn.Dropout(args.dropout)
         self.multi_attn = nn.ModuleList([Block(args) for _ in range(args.mhatt_n_layer)])
-        
         self.ln_f = LayerNorm(args.n_embd, bias=args.bias)
-            
         self.lm_head = nn.Linear(args.n_embd, args.variable_num)
 
         # init all weights
@@ -323,16 +321,17 @@ class GPTS(nn.Module):
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
-    def forward(self, idx, targets=None):
-        device = idx.device
-        b, t = idx.size()
-        assert t <= self.config.block_size, f"Cannot forward sequence of length {t}, block size is only {self.config.block_size}"
-        pos = torch.arange(0, t, dtype=torch.long, device=device).unsqueeze(0) # shape (1, t)
+    def forward(self, batch):
+        self.time_start = time.time()
+        times_in = batch['times_in']
+        data_in = batch['data_in']
+        mask_in = batch['mask_in']
+        t_exist = batch['exist_times']
+        utils.check_mask(data_in, mask_in)
+        time_embed = self.time_embedding(times_in.unsqueeze(-1))
+        x = torch.cat((data_in, mask_in, time_embed), dim=-1)
+        x = self.input_lyr(x)
 
-        # forward the GPT model itself
-        tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
-        pos_emb = self.transformer.wpe(pos) # position embeddings of shape (1, t, n_embd)
-        x = self.transformer.drop(tok_emb + pos_emb)
         for block in self.transformer.h:
             x = block(x)
         x = self.transformer.ln_f(x)

@@ -122,6 +122,22 @@ def load_tvt(args, m4_path, logger):
 
         data_train, data_validation, data_test = filter_tvt(
             data_tvt, logger, args)
+    
+    elif args.data == "m4_gpts":
+        data_mimic = pd.read_csv(
+            m4_path/'mimic4_full_dataset_gpts_small.csv', index_col=0)
+        
+        # Splitting
+        ids_train, ids_valid = sklearn.model_selection.train_test_split(
+            data_mimic.index.unique(),
+            train_size=0.9,
+            random_state=args.random_state,
+            shuffle=True)
+
+        data_train = data_mimic.loc[ids_train]
+        data_validation = data_mimic.loc[ids_valid]
+        data_test = None
+        
     else:
         data_mimic = pd.read_csv(
             m4_path/'mimic4_data.csv', index_col=0)
@@ -437,6 +453,43 @@ class MIMICDatasetPretrain(Dataset):
         if len(samples.shape) == 1:
             samples = self.in_df.loc[[idx]]
         return {"idx": idx, "truth": 0, "samples": samples}
+    
+
+class MIMICDatasetGP(Dataset):
+    def __init__(self, in_df):
+
+        self.in_df = in_df
+
+        # how many different ids are there
+        self.length = self.in_df["ID"].nunique()
+
+        # how many different variables are there
+        self.variable_num = sum([col.startswith("Value")
+                                for col in self.in_df.columns])
+
+        # Rename all the admission ids
+        map_dict = dict(zip(self.in_df.loc[:, "ID"].unique(),
+                            np.arange(self.in_df.loc[:, "ID"].nunique())))
+        self.in_df.loc[:, "ID"] = self.in_df.loc[:, "ID"].map(map_dict)
+
+        # data processing
+        self.in_df = self.in_df.astype(np.float32)
+        self.in_df.ID = self.in_df.ID.astype(np.int)
+        # This step is important for the batch sampling on admissioin ids
+        self.in_df.set_index("ID", inplace=True)
+        
+        # Not necessary. Already sorted.
+        # self.in_df.sort_values("Time", inplace=True)
+
+    def __len__(self):
+        return self.length
+
+    def __getitem__(self, idx):
+        # given the admission id, get the whole time series
+        samples = self.in_df.loc[idx]
+        if len(samples.shape) == 1:
+            samples = self.in_df.loc[[idx]]
+        return {"idx": idx, "samples": samples}
 
 
 class DatasetBiClass(Dataset):
@@ -695,6 +748,70 @@ def collate_fn_biclass(batch, num_vars, args):
             "exist_times": exist_times,
             "lengths": lengths
         }
+
+    return data_dict
+
+
+def collate_fn_gpts(batch, num_vars, args):
+
+    value_cols = []
+    mask_cols = []
+    for col in batch[0]["samples"].columns:
+        value_cols.append(col.startswith("Value"))
+        mask_cols.append(col.startswith("Mask"))
+
+    values_list = []
+    masks_list = []
+    times_list = []
+    len_list = []
+    for b in batch:
+        rows_b = b["samples"].shape[0]
+        rows_random_max = rows_b - args.seq_len_min
+        idx_start = np.random.randint(0, rows_random_max)
+        idx_end = min(idx_start + args.seq_len_max, rows_b)
+        b_sub = b["samples"].iloc[idx_start:idx_end, :]
+        values_list.append(b_sub["samples"].loc[:, value_cols].values)
+        masks_list.append(b_sub["samples"].loc[:, mask_cols].values)
+        ts = b_sub["samples"]["Time"].values
+        times_list.append(ts)
+        len_list.append(len(ts))
+
+    if args.time_len_fixed == True:
+        max_len = args.num_times
+    else:
+        max_len = max(len_list)
+
+    # shape = (batch_size, maximum sequence length, variables)
+    combined_values = torch.from_numpy(np.stack([np.concatenate([values, np.zeros(
+        (max_len-len_t, num_vars), dtype=np.float32)], 0) for values, len_t in zip(values_list, len_list)], 0,)).to(device)
+
+    # shape = (batch_size, maximum sequence length, variables)
+    combined_masks = torch.from_numpy(np.stack([np.concatenate([mask, np.zeros(
+        (max_len-len_t, num_vars), dtype=np.float32)], 0) for mask, len_t in zip(masks_list, len_list)], 0)).to(device)
+
+    # shape = (batch_size, maximum sequence length)
+    combined_times = torch.from_numpy(np.stack([np.concatenate([times, np.zeros(
+        max_len-len_t, dtype=np.float32)], 0) for times, len_t in zip(times_list, len_list)], 0,).astype(np.float32)).to(device)
+    
+    exist_times = combined_masks.sum(dim=-1).gt(0)
+
+    lengths = torch.tensor(len_list).to(device)
+
+    # The first time point should be larger than 0 after data processing
+    assert combined_times[:, 0].gt(0).all()
+
+    if args.first_dim == "time_series":
+        combined_values = combined_values.permute(1, 0, 2)
+        combined_masks = combined_masks.permute(1, 0, 2)
+        combined_times = combined_times.permute(1, 0)
+
+    data_dict = {
+        "times_in": combined_times,
+        "data_in": combined_values,
+        "mask_in": combined_masks,
+        "exist_times": exist_times,
+        "lengths": lengths
+    }
 
     return data_dict
 
