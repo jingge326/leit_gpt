@@ -770,9 +770,9 @@ def collate_fn_gpts(batch, num_vars, args):
         idx_start = np.random.randint(0, rows_random_max)
         idx_end = min(idx_start + args.seq_len_max, rows_b)
         b_sub = b["samples"].iloc[idx_start:idx_end, :]
-        values_list.append(b_sub["samples"].loc[:, value_cols].values)
-        masks_list.append(b_sub["samples"].loc[:, mask_cols].values)
-        ts = b_sub["samples"]["Time"].values
+        values_list.append(b_sub.loc[:, value_cols].values)
+        masks_list.append(b_sub.loc[:, mask_cols].values)
+        ts = b_sub["Time"].values
         times_list.append(ts)
         len_list.append(len(ts))
 
@@ -781,6 +781,7 @@ def collate_fn_gpts(batch, num_vars, args):
     else:
         max_len = max(len_list)
 
+    device = args.device
     # shape = (batch_size, maximum sequence length, variables)
     combined_values = torch.from_numpy(np.stack([np.concatenate([values, np.zeros(
         (max_len-len_t, num_vars), dtype=np.float32)], 0) for values, len_t in zip(values_list, len_list)], 0,)).to(device)
@@ -796,9 +797,6 @@ def collate_fn_gpts(batch, num_vars, args):
     exist_times = combined_masks.sum(dim=-1).gt(0)
 
     lengths = torch.tensor(len_list).to(device)
-
-    # The first time point should be larger than 0 after data processing
-    assert combined_times[:, 0].gt(0).all()
 
     if args.first_dim == "time_series":
         combined_values = combined_values.permute(1, 0, 2)

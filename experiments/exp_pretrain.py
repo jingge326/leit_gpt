@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import random
 import time
+from models.gpts import GPTS
 import numpy as np
 import pandas as pd
 import sklearn
@@ -12,7 +13,6 @@ import wandb
 from argparse import Namespace
 from torch.utils.data import DataLoader
 
-from experiments import BaseExperiment
 from experiments.data_mimic import MIMICDatasetGP, collate_fn_gpts, load_tvt
 from models.model_factory import ModelFactory
 from utils import record_experiment
@@ -39,10 +39,9 @@ class Exp_Pretrain:
 
         self.dltrain, self.dlval = self.get_data()
         
-        self.model = self.get_model().to(self.device)
+        self.model = GPTS(args=self.args).to(self.device)
         
-        num_params = sum(p.numel() for p in self.model.parameters())
-        self.logger.info(f'num_params={num_params}')
+        self.logger.info(f'num_params={self.model.num_params}')
 
         self.optim = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()),
                                       lr=args.lr, weight_decay=args.weight_decay)
@@ -105,23 +104,7 @@ class Exp_Pretrain:
             batch_size=self.args.batch_size)
 
         return dl_train, dl_val
-    
-    def get_model(self):
-        print('current_ehr_variable_num: ' + str(self.args.variable_num))
 
-        if self.args.ml_task == 'extrap':
-            model = self.mf.initialize_extrap_model()
-        elif self.args.ml_task == 'interp':
-            model = self.mf.initialize_interp_model()
-        elif self.args.ml_task == 'biclass':
-            model = self.mf.initialize_biclass_model()
-        else:
-            raise ValueError("Unknown")
-
-        if self.args.model_type != "initialize":
-            model = self.update_model(model)
-
-        return model
 
     def update_model(self, model):
         if self.args.model_type == 'reconstruct':
@@ -238,7 +221,7 @@ class Exp_Pretrain:
             wandb.log({"test_loss": test_loss, "run_id": 1})
     
     def training_step(self, batch):
-        results = self.model.compute_prediction_results(batch)
+        results = self.model(batch)
         return results['loss']
 
     def validation_step(self, epoch):

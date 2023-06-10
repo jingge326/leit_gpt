@@ -258,8 +258,10 @@ parser.add_argument('--invertible', type=int, default=1,
 # GPTS specific args
 parser.add_argument("--mhatt_n_layer", type=int, default=6)
 parser.add_argument("--n_embd", type=int, default=768)
+parser.add_argument("--n_head", type=int, default=12)
 parser.add_argument("--seq_len_min", type=int, default=10)
-parser.add_argument("--seq_len_max", type=int, default=1024)
+parser.add_argument("--seq_len_max", type=int, default=256)
+parser.add_argument("bias", action='store_true')
 
 
 if __name__ == "__main__":

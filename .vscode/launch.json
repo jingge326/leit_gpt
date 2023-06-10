@@ -21,6 +21,8 @@
                 "pretrain",
                 "--variable-num",
                 "113",
+                "--nhead",
+                "12",
                 "--test-info",
                 "test"
             ],
