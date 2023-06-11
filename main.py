@@ -22,7 +22,7 @@ parser.add_argument("--leit-model", default="gpts",
                              "ivp_auto", "att_ivp_vae", "ivp_auto"])
 parser.add_argument("--model-type", default="initialize",
                     choices=["initialize", "reconstruct"])
-parser.add_argument("--num-dl-workers", type=int, default=4)
+parser.add_argument("--num-dl-workers", type=int, default=32)
 parser.add_argument("--device", type=str, default="cuda")
 parser.add_argument("--exp-name", type=str, default="")
 parser.add_argument("--epochs-min", type=int, default=1)
@@ -256,7 +256,7 @@ parser.add_argument('--invertible', type=int, default=1,
                     help='If network is invertible', choices=[0, 1])
 
 # GPTS specific args
-parser.add_argument("--mhatt_n_layer", type=int, default=6)
+parser.add_argument("--mhatt_n_layer", type=int, default=10)
 parser.add_argument("--n_embd", type=int, default=768)
 parser.add_argument("--n_head", type=int, default=12)
 parser.add_argument("--seq_len_min", type=int, default=10)

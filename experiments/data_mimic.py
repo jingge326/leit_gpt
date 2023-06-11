@@ -125,7 +125,7 @@ def load_tvt(args, m4_path, logger):
     
     elif args.data == "m4_gpts":
         data_mimic = pd.read_csv(
-            m4_path/'mimic4_full_dataset_gpts_small.csv', index_col=0)
+            m4_path/'mimic4_full_dataset_gpts.csv', index_col=0)
         
         # Splitting
         ids_train, ids_valid = sklearn.model_selection.train_test_split(

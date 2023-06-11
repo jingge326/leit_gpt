@@ -210,54 +210,21 @@ class Exp_Pretrain:
 
         # Load best model
         self.model.load_state_dict(best_model)
-        # Held-out test set step
-        test_loss = self.test_step()
-
         self.logger.info(f'epoch_duration_mean={np.mean(durations):.5f}')
-        self.logger.info(f'test_loss={test_loss:.5f}')
 
         if self.args.log_tool == 'wandb':
             wandb.log({"epoch_duration_mean": np.mean(durations), "run_id": 1})
-            wandb.log({"test_loss": test_loss, "run_id": 1})
     
     def training_step(self, batch):
-        results = self.model(batch)
-        return results['loss']
+        return self.model(batch)["loss"]
 
     def validation_step(self, epoch):
         results = self.compute_results_all_batches(self.dlval)
-        self.logger.info(f"val_auroc={results['auroc']:.5f}")
-        self.logger.info(f"val_auprc={results['auprc']:.5f}")
-        self.logger.info(f"val_ce_loss={results['ce_loss']:.5f}")
         self.logger.info(f"val_forward_time={results['forward_time']:.5f}")
+        self.logger.info(f"val_mse={results['mse']:.5f}")
         if self.args.log_tool == "wandb":
-            wandb.log({"val_auroc": results['auroc'], "epoch_id": epoch})
-            wandb.log({"val_auprc": results['auprc'], "epoch_id": epoch})
-            wandb.log({"val_ce_loss": results['ce_loss'], "epoch_id": epoch})
             wandb.log(
                 {"val_forward_time": results['forward_time'], "epoch_id": epoch})
-            wandb.log({"kldiv_z0": results["kldiv_z0"], "epoch_id": epoch})
-            # temporally added
-            wandb.log({"loss_ll_z": results["loss_ll_z"], "epoch_id": epoch})
-            wandb.log(
-                {"lat_variance": results["lat_variance"], "epoch_id": epoch})
-        if results['val_loss'] != 0:
-            return results['val_loss']
-        else:
-            return results['loss']
-
-    def test_step(self):
-        results = self.compute_results_all_batches(self.dltest)
-        self.logger.info(f"test_auroc={results['auroc']:.5f}")
-        self.logger.info(f"test_auprc={results['auprc']:.5f}")
-        self.logger.info(f"test_ce_loss={results['ce_loss']:.5f}")
-        self.logger.info(f"test_forward_time={results['forward_time']:.5f}")
-        if self.args.log_tool == "wandb":
-            wandb.log({"test_auroc": results['auroc'], "run_id": 1})
-            wandb.log({"test_auprc": results['auprc'], "run_id": 1})
-            wandb.log({"test_ce_loss": results['ce_loss'], "run_id": 1})
-            wandb.log(
-                {"test_forward_time": results['forward_time'], "run_id": 1})
         if results['val_loss'] != 0:
             return results['val_loss']
         else:
@@ -268,40 +235,16 @@ class Exp_Pretrain:
         total['loss'] = 0
         total['likelihood'] = 0
         total['mse'] = 0
-        total["auroc"] = 0
-        total['kl_first_p'] = 0
-        total['std_first_p'] = 0
-        total['ce_loss'] = 0
         total['mse_reg'] = 0
         total['mae_reg'] = 0
         total['mse_extrap'] = 0
         total['forward_time'] = 0
-
-        total['kldiv_z0'] = 0
-        total['loss_ae'] = 0
-        total['loss_vae'] = 0
-        total['loss_ll_z'] = 0
         total["val_loss"] = 0
-        total["lat_variance"] = 0
 
         n_test_batches = 0
 
-        classif_predictions = torch.Tensor([]).to(self.args.device)
-        all_test_labels = torch.Tensor([]).to(self.args.device)
-        if self.args.not_vae:
-            n_traj_samples = 1
-        else:
-            n_traj_samples = self.args.k_iwae
-
         for batch in dl:
             results = self.model.run_validation(batch)
-
-            if self.args.ml_task == 'biclass':
-                n_labels = 1  # batch['truth'].size(-1)
-                classif_predictions = torch.cat(
-                    (classif_predictions, results["label_predictions"].reshape(n_traj_samples, -1, n_labels)), 1)
-                all_test_labels = torch.cat((all_test_labels,
-                                            batch['truth'].reshape(-1, n_labels)), 0)
 
             for key in total.keys():
                 if results.get(key) is not None:
@@ -315,27 +258,6 @@ class Exp_Pretrain:
         if n_test_batches > 0:
             for key, _ in total.items():
                 total[key] = total[key] / n_test_batches
-
-        if self.args.ml_task == 'biclass':
-            all_test_labels = all_test_labels.repeat(n_traj_samples, 1, 1)
-
-            total["auroc"] = 0.0
-            total["auprc"] = 0.0
-            if torch.sum(all_test_labels) != 0.0:
-                print("Number of labeled examples: {}".format(
-                    int(len(all_test_labels.reshape(-1))/n_traj_samples)))
-                print("Number of examples with mortality 1: {}".format(
-                    int(torch.sum(all_test_labels == 1.0)/n_traj_samples)))
-
-                array_truth = all_test_labels.cpu().numpy().reshape(-1)
-                array_predict = classif_predictions.cpu().numpy().reshape(-1)
-                total["auroc"] = sklearn.metrics.roc_auc_score(
-                    array_truth, array_predict)
-                total["auprc"] = sklearn.metrics.average_precision_score(
-                    array_truth, array_predict)
-            else:
-                print(
-                    "Warning: Couldn't compute AUC -- all examples are from the same class")
 
         return total
 

@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from experiments.utils_mtan import compute_log_normal_pdf
+from experiments.utils_mtan import compute_log_normal_pdf, mean_squared_error
 
 import utils
 
@@ -164,6 +164,7 @@ class CausalSelfAttention(nn.Module):
         q = q.view(B, T, self.nhead, C // self.nhead).transpose(1, 2) # (B, nh, T, hs)
         v = v.view(B, T, self.nhead, C // self.nhead).transpose(1, 2) # (B, nh, T, hs)
 
+        mask_left_attn = torch.tril(torch.ones(T, T)).view(1, 1, T, T).to(x.device)
         # causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
         if self.flash:
             # efficient attention using Flash Attention CUDA kernels
@@ -171,7 +172,7 @@ class CausalSelfAttention(nn.Module):
         else:
             # manual implementation of attention
             att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
-            att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
+            att = att.masked_fill(mask_left_attn == 0, float('-inf'))
             att = F.softmax(att, dim=-1)
             att = self.attn_dropout(att)
             y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
@@ -257,6 +258,7 @@ class GPTS(nn.Module):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def forward(self, batch):
+        results = {}
         self.time_start = time.time()
         times_in = batch['times_in']
         data_in = batch['data_in']
@@ -269,19 +271,22 @@ class GPTS(nn.Module):
 
         for block in self.multi_attn_lyrs:
             x = block(x)
-        x = self.transformer.ln_f(x)
+        x = self.ln_f(x)
 
         if self.args.ml_task == "pretrain":
             # if we are given some desired targets also calculate the loss
-            gen_values = self.lm_head(x)
-            rec_likelihood = compute_log_normal_pdf(data_in[:,1:,:], mask_in[:,1:,:], gen_values[:,:-1,:], self.args)
-            loss = -rec_likelihood
+            results["gen_values"] = self.lm_head(x)
+            rec_likelihood = compute_log_normal_pdf(data_in[:,1:,:], mask_in[:,1:,:], results["gen_values"][:,:-1,:], self.args)
+            results["loss"] = -rec_likelihood.mean()
         else:
             # inference-time mini-optimization: only forward the lm_head on the very last position
-            gen_values = self.lm_head(x[:, [-1], :]) # note: using list [-1] to preserve the time dim
-            loss = None
+            results["gen_values"] = self.lm_head(x[:, [-1], :]) # note: using list [-1] to preserve the time dim
+            results["loss"] = None
 
-        return gen_values, loss
+        results["mse"] = mean_squared_error(
+                data_in[:,1:,:], results["gen_values"][:,:-1,:], mask=mask_in[:,1:,:]).detach()
+
+        return results
 
     def crop_block_size(self, block_size):
         # model surgery to decrease the block size if necessary
@@ -418,3 +423,6 @@ class GPTS(nn.Module):
             idx = torch.cat((idx, idx_next), dim=1)
 
         return idx
+    
+    def run_validation(self, batch):
+        return self.forward(batch)
