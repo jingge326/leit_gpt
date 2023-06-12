@@ -123,23 +123,9 @@ def load_tvt(args, m4_path, logger):
         data_train, data_validation, data_test = filter_tvt(
             data_tvt, logger, args)
 
-    # elif args.data == "m4_gpts":
-    #     data_mimic = pd.read_csv(
-    #         m4_path/'mimic4_full_dataset_gpts_small.csv', index_col=0)
-
-    #     # Splitting
-    #     ids_train, ids_valid = sklearn.model_selection.train_test_split(
-    #         data_mimic.index.unique(),
-    #         train_size=0.9,
-    #         random_state=args.random_state,
-    #         shuffle=True)
-
-    #     data_train = data_mimic.loc[ids_train]
-    #     data_validation = data_mimic.loc[ids_valid]
-    #     data_test = None
     elif args.data == "m4_gpts":
         data_mimic = pd.read_csv(
-            m4_path/'mimic4_full_dataset_gpts_id.csv', index_col=0)
+            m4_path/'mimic4_full_dataset_gpts_small.csv', index_col=0)
 
         # Splitting
         ids_train, ids_valid = sklearn.model_selection.train_test_split(
@@ -148,8 +134,8 @@ def load_tvt(args, m4_path, logger):
             random_state=args.random_state,
             shuffle=True)
 
-        data_train = ids_train.to_list()
-        data_validation = ids_valid.to_list()
+        data_train = data_mimic.loc[ids_train]
+        data_validation = data_mimic.loc[ids_valid]
         data_test = None
 
     else:
@@ -470,23 +456,39 @@ class MIMICDatasetPretrain(Dataset):
 
 
 class MIMICDatasetGP(Dataset):
-    def __init__(self, ids, data_path):
-        self.ids = ids
-        self.data_path = data_path
+    def __init__(self, in_df):
+
+        self.in_df = in_df
+
         # how many different ids are there
-        self.length = len(self.ids)
+        self.length = self.in_df["ID"].nunique()
+
+        # how many different variables are there
+        self.variable_num = sum([col.startswith("Value")
+                                for col in self.in_df.columns])
+
         # Rename all the admission ids
-        self.map_dict = dict(zip(range(self.length), self.ids))
+        map_dict = dict(zip(self.in_df.loc[:, "ID"].unique(),
+                            np.arange(self.in_df.loc[:, "ID"].nunique())))
+        self.in_df.loc[:, "ID"] = self.in_df.loc[:, "ID"].map(map_dict)
+
+        # data processing
+        self.in_df = self.in_df.astype(np.float32)
+        self.in_df.ID = self.in_df.ID.astype(np.int)
+        # This step is important for the batch sampling on admissioin ids
+        self.in_df.set_index("ID", inplace=True)
+
+        # Not necessary. Already sorted.
+        # self.in_df.sort_values("Time", inplace=True)
 
     def __len__(self):
         return self.length
 
     def __getitem__(self, idx):
         # given the admission id, get the whole time series
-        adm_id = self.map_dict[idx]
-        samples = pd.read_csv(
-            self.data_path/(str(adm_id)+".csv"), dtype=np.float32)
-        assert len(samples.shape) == 2
+        samples = self.in_df.loc[idx]
+        if len(samples.shape) == 1:
+            samples = self.in_df.loc[[idx]]
         return {"idx": idx, "samples": samples}
 
 

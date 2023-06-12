@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--random-state", type=int, default=1, help="Random seed")
 parser.add_argument("--proj-path", type=str,
                     default=str(Path(__file__).parents[0]))
-parser.add_argument("--test-info", default="extra_24")
+parser.add_argument("--test-info", default="first_test")
 parser.add_argument("--leit-model", default="gpts",
                     choices=["gpts", "ivp_vae", "ivp_vae_old", "red_vae", "classic_rnn", "mtan",
                              "raindrop", "ckconv", "cru", "gob", "grud",
@@ -46,11 +46,11 @@ parser.add_argument("--freeze-opt", default="unfreeze",
 parser.add_argument("--num-class", type=int, default=11)
 parser.add_argument("--z0_mapper", default="softplus",
                     choices=["logstd", "softplus"])
-parser.add_argument("--log-tool", default="logging",
+parser.add_argument("--log-tool", default="wandb",
                     choices=["logging", "wandb", "all"])
 
 # Args for datasets
-parser.add_argument("--data", default="p12", help="Dataset name",
+parser.add_argument("--data", default="m4_gpts", help="Dataset name",
                     choices=["m4_gpts", "m4_general", "p12", "p19_sepsis", "person_activity",
                              "m4_mortality_100", "m4_mortality_250", "m4_mortality_500", "m4_mortality_1000",
                              "m4_mortality_2000", "m4_mortality_3000", "m4_next", "m4_next_100", "m4_next_250",
@@ -58,7 +58,7 @@ parser.add_argument("--data", default="p12", help="Dataset name",
                              "m4_smooth"])
 parser.add_argument("--num-samples", type=int, default=-1)
 parser.add_argument("--variable-num", type=int,
-                    default=41, choices=[96, 41, 34, 14, 113])
+                    default=113, choices=[96, 41, 34, 14, 113])
 parser.add_argument("--ts-full", action='store_true')
 parser.add_argument("--del-std5", action='store_true')
 parser.add_argument("--time-scale", default="time_max",
@@ -66,9 +66,9 @@ parser.add_argument("--time-scale", default="time_max",
 parser.add_argument("--time-constant", type=float, default=1)
 parser.add_argument("--first-dim", default="batch",
                     choices=["batch", "time_series"])
-parser.add_argument("--batch-size", type=int, default=50)
+parser.add_argument("--batch-size", type=int, default=64)
 parser.add_argument("--t-offset", type=float, default=0.1)
-parser.add_argument("--ml-task", default="biclass",
+parser.add_argument("--ml-task", default="pretrain",
                     choices=["biclass", "extrap", "interp", "length", "pretrain"])
 parser.add_argument("--extrap-full", action='store_true')
 parser.add_argument("--p12-classify", action='store_false')
@@ -170,7 +170,7 @@ parser.add_argument("--classify-pertp", action='store_true')
 # Args for Raindrop
 parser.add_argument("--d-ob", type=int, default=4, help="")
 parser.add_argument("--dim-pos-encoder", type=int, default=16)
-parser.add_argument("--nhead", type=int, default=4,
+parser.add_argument("--nhead", type=int, default=12,
                     help="number of heads in multihead-attention")
 parser.add_argument("--nhid", type=int, default=128,
                     help="Dimension of feedforward network model")
@@ -277,12 +277,12 @@ if __name__ == "__main__":
     else:
         raise ValueError("Unknown")
 
-    # try:
-    #     experiment.run()
-    #     experiment.finish()
-    # except Exception:
-    #     with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
-    #         print(traceback.format_exc(), file=fout)
+    try:
+        experiment.run()
+        experiment.finish()
+    except Exception:
+        with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
+            print(traceback.format_exc(), file=fout)
 
-    experiment.run()
-    experiment.finish()
+    # experiment.run()
+    # experiment.finish()

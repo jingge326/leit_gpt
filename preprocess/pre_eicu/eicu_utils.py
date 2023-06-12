@@ -77,9 +77,9 @@ def read_patients_table(eicu_path, output_path):
     pats = dataframe_from_csv(os.path.join(
         eicu_path, 'patient.csv.gz'), index_col=False)
     pats = filter_patients_on_age(pats, min_age=18, max_age=89)
-    pats = filter_one_unit_stay(pats)
+    # pats = filter_one_unit_stay(pats)
     pats = filter_patients_on_columns(pats)
-    pats = filter_short_stay(pats, min_hosp=2880, min_icu=1440)
+    pats = filter_short_stay(pats, min_hosp=1440, min_icu=1440)
     pats.update(transform_gender(pats.gender))
     pats.update(transform_ethnicity(pats.ethnicity))
     pats.update(transform_hospital_discharge_status(

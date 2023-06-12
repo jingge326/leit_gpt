@@ -19,14 +19,14 @@ from utils import record_experiment
 
 
 class Exp_Pretrain:
-    
+
     def __init__(self, args: Namespace):
         self.args = args
         self.epochs_max = args.epochs_max
         self.patience = args.patience
         self.proj_path = Path(args.proj_path)
         self.mf = ModelFactory(self.args)
-        
+
         self.args.exp_name = '_'.join(["gpts", args.test_info])
 
         torch.manual_seed(args.random_state)
@@ -38,9 +38,9 @@ class Exp_Pretrain:
         self.logger.info(f'Device: {self.device}')
 
         self.dltrain, self.dlval = self.get_data()
-        
+
         self.model = GPTS(args=self.args).to(self.device)
-        
+
         self.logger.info(f'num_params={self.model.num_params}')
 
         self.optim = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()),
@@ -65,18 +65,14 @@ class Exp_Pretrain:
             if self.args.model_type != "initialize":
                 os.environ["WANDB_MODE"] = "dryrun"
             tags = [
-                self.args.ml_task,
-                self.args.data,
-                self.args.leit_model,
+                "nhead"+str(self.args.nhead),
+                "nlyrs"+str(self.args.mhatt_n_layer),
+                "bsize"+str(self.args.batch_size),
             ]
-            if self.args.leit_model == "ivp_vae" or self.args.leit_model == "red_vae":
-                tags.append(self.args.ivp_solver)
-            if self.args.mask_drop_rate > 0:
-                tags.append("dr"+str(int(self.args.mask_drop_rate*100)))
             tags.append(self.args.test_info)
             os.environ["WANDB__SERVICE_WAIT"] = "1800"
             wandb.init(
-                project="leit",
+                project="leit_gpt",
                 config=copy.deepcopy(dict(self.args._get_kwargs())),
                 group="_".join(tags),
                 tags=tags,
@@ -85,26 +81,27 @@ class Exp_Pretrain:
     def get_data(self):
 
         m4_path = self.proj_path/"data/mimic4/processed/"
-        data_train, data_validation, _ = load_tvt(self.args, m4_path, self.logger)
-                
-        train_dataset = MIMICDatasetGP(data_train.reset_index())
-        val_dataset = MIMICDatasetGP(data_validation.reset_index())
+        data_train, data_validation, _ = load_tvt(
+            self.args, m4_path, self.logger)
+
+        train_dataset = MIMICDatasetGP(data_train, data_path=m4_path/"split")
+        val_dataset = MIMICDatasetGP(
+            data_validation, data_path=m4_path/"split")
 
         dl_train = DataLoader(
             dataset=train_dataset,
             collate_fn=lambda batch: collate_fn_gpts(
-                batch, train_dataset.variable_num, self.args),
+                batch, self.args.variable_num, self.args),
             shuffle=True,
             batch_size=self.args.batch_size)
         dl_val = DataLoader(
             dataset=val_dataset,
             collate_fn=lambda batch: collate_fn_gpts(
-                batch, val_dataset.variable_num, self.args),
+                batch, self.args.variable_num, self.args),
             shuffle=True,
             batch_size=self.args.batch_size)
 
         return dl_train, dl_val
-
 
     def update_model(self, model):
         if self.args.model_type == 'reconstruct':
@@ -214,7 +211,7 @@ class Exp_Pretrain:
 
         if self.args.log_tool == 'wandb':
             wandb.log({"epoch_duration_mean": np.mean(durations), "run_id": 1})
-    
+
     def training_step(self, batch):
         return self.model(batch)["loss"]
 

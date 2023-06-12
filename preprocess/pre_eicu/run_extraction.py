@@ -12,24 +12,24 @@ def data_extraction_root(args):
     if not os.path.exists(eicu_dir):
         os.mkdir(eicu_dir)
 
-    # patients = eicu_utils.read_patients_table(args.eicu_dir, args.output_dir)
-    # stay_id = eicu_utils.cohort_stay_id(patients)
+    patients = eicu_utils.read_patients_table(args.eicu_dir, args.output_dir)
+    stay_id = eicu_utils.cohort_stay_id(patients)
 
-    # eicu_utils.break_up_stays_by_unit_stay(
-    #     patients, args.output_dir, stayid=stay_id, verbose=1)
-    # del patients
+    eicu_utils.break_up_stays_by_unit_stay(
+        patients, args.output_dir, stayid=stay_id, verbose=1)
+    del patients
 
-    # print("reading lab table")
-    # lab = eicu_utils.read_lab_table(args.eicu_dir)
-    # eicu_utils.break_up_lab_by_unit_stay(
-    #     lab, args.output_dir, stayid=stay_id, verbose=1)
-    # del lab
+    print("reading lab table")
+    lab = eicu_utils.read_lab_table(args.eicu_dir)
+    eicu_utils.break_up_lab_by_unit_stay(
+        lab, args.output_dir, stayid=stay_id, verbose=1)
+    del lab
 
-    # print("reading nurseCharting table, might take some time")
-    # nc = eicu_utils.read_nc_table(args.eicu_dir)
-    # eicu_utils.break_up_stays_by_unit_stay_nc(
-    #     nc, args.output_dir, stayid=stay_id, verbose=1)
-    # del nc
+    print("reading nurseCharting table, might take some time")
+    nc = eicu_utils.read_nc_table(args.eicu_dir)
+    eicu_utils.break_up_stays_by_unit_stay_nc(
+        nc, args.output_dir, stayid=stay_id, verbose=1)
+    del nc
 
     # Write the timeseries data into folders
     eicu_utils.extract_time_series(args.output_dir, drop_outliers=True)
@@ -40,7 +40,7 @@ def data_extraction_root(args):
 
 
 path_proj = Path(__file__).parents[2]
-path_raw = path_proj/"data/eicu/raw/eicu-2.0"
+path_raw = path_proj/"data/eicu/raw"
 path_extr = path_proj/"data/eicu/extracted"
 
 
