@@ -15,26 +15,16 @@
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
             "args": [
-                "--data",
-                "m4_gpts",
-                "--ml-task",
-                "pretrain",
-                "--device",
-                "cuda:1",
-                "--log-tool",
-                "wandb",
-                "--variable-num",
-                "113",
-                "--nhead",
-                "12",
                 "--mhatt_n_layer",
-                "10",
+                "4",
+                "--n_embd",
+                "240",
                 "--batch-size",
                 "64",
                 "--test-info",
                 "test"
             ],
             "console": "integratedTerminal"
-        },
+        }
     ]
 }

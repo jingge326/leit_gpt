@@ -6,44 +6,15 @@ from pathlib import Path
 if __name__ == "__main__":
 
     list_exp = []
-
-    # # Large GPUs
-    # list_exp.extend(["M4-BiClass-mTAN"])
-    # list_exp.extend(["M4-Extrap24H-mTAN"])
-
-    # list_exp.extend(["P12-Extrap24H-IVPVAE", "P12-Extrap24H-IVPVAE-ODE", "P12-Extrap24H-ClassicRNN",
-    #                  "P12-Extrap24H-GRUD", "P12-Extrap24H-GOB", "P12-Extrap24H-mTAN",
-    #                  "P12-Extrap24H-CRU", "P12-Extrap24H-REDVAE", "P12-Extrap24H-REDVAE-ODE"])
-
-    # list_exp.extend(["P12-BiClass-IVPVAE", "P12-BiClass-IVPVAE-ODE", "P12-BiClass-ClassicRNN",
-    #                  "P12-BiClass-GRUD", "P12-BiClass-Raindrop", "P12-BiClass-mTAN",
-    #                  "P12-BiClass-REDVAE", "P12-BiClass-REDVAE-ODE"])
-
-    # list_exp.extend(["eICU-BiClass-IVPVAE", "eICU-BiClass-IVPVAE-ODE", "eICU-BiClass-ClassicRNN",
-    #                  "eICU-BiClass-GRUD", "eICU-BiClass-Raindrop", "eICU-BiClass-mTAN",
-    #                  "eICU-BiClass-REDVAE", "eICU-BiClass-REDVAE-ODE"])
-
-    # list_exp.extend(["eICU-Extrap24H-IVPVAE", "eICU-Extrap24H-IVPVAE-ODE", "eICU-Extrap24H-ClassicRNN",
-    #                  "eICU-Extrap24H-GRUD", "eICU-Extrap24H-GOB", "eICU-Extrap24H-mTAN",
-    #                  "eICU-Extrap24H-CRU", "eICU-Extrap24H-REDVAE", "eICU-Extrap24H-REDVAE-ODE"])
-
-    # list_exp.extend(["M4-BiClass-IVPVAE", "M4-BiClass-IVPVAE-ODE", "M4-BiClass-ClassicRNN",
-    #                  "M4-BiClass-GRUD", "M4-BiClass-Raindrop", "M4-BiClass-REDVAE",
-    #                  "M4-BiClass-REDVAE-ODE"])
-
-    # list_exp.extend(["M4-Extrap24H-IVPVAE", "M4-Extrap24H-IVPVAE-ODE", "M4-Extrap24H-ClassicRNN",
-    #                  "M4-Extrap24H-GRUD", "M4-Extrap24H-GOB",
-    #                  "M4-Extrap24H-CRU", "M4-Extrap24H-REDVAE", "M4-Extrap24H-REDVAE-ODE"])
-
     list_exp.extend(
-        ["eICU-BiClass-IVPVAE", "eICU-BiClass-REDVAE"])
+        ["M4-PreTrain-GPTS"])
 
-    seeds_start = 5
-    seeds_stop = 5
+    seeds_start = 1
+    seeds_stop = 1
 
     dr_list = []
 
-    dr_list.extend([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+    # dr_list.extend([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
 
     path_proj = Path(__file__).parents[0]
     file_launch = path_proj/".vscode/launch.json"

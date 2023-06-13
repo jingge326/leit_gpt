@@ -15,106 +15,6 @@ from experiments.utils_mtan import compute_log_normal_pdf, mean_squared_error
 import utils
 
 
-class MultiheadAttention(nn.Module):
-    # MultiheadAttention for irregular time series
-    def __init__(self, args):
-        super().__init__()
-        self.attn_dim = args.attn_dim
-        self.num_heads = args.nhead
-        self.input_dim = args.variable_num * 2 + args.embed_time
-        self.all_dim = self.attn_dim * self.num_heads
-        self.query = nn.Linear(self.input_dim, self.all_dim)
-        self.key = nn.Linear(self.input_dim, self.all_dim)
-        self.value = nn.Linear(self.input_dim, self.all_dim)
-        self.dropout = nn.Dropout(args.dropout)
-        self.fc = nn.Linear(self.all_dim, args.attn_dim)
-
-    def forward(self, x, mask=None):
-        # x: shape: [batch_size, seq_len, input_dim]
-        # mask: shape: [batch_size, seq_len]
-        b, n, _ = x.size()
-        q = self.query(x).view(b, n, self.num_heads, self.attn_dim).transpose(
-            1, 2)  # shape: [batch_size, num_heads, seq_len, input_dim]
-        k = self.key(x).view(b, n, self.num_heads, self.attn_dim).transpose(
-            1, 2)  # shape: [batch_size, num_heads, seq_len, input_dim]
-        v = self.value(x).view(b, n, self.num_heads, self.attn_dim).transpose(
-            1, 2)  # shape: [batch_size, num_heads, seq_len, input_dim]
-
-        # Scaled Dot-Product Attention
-        # shape: [batch_size, num_heads, seq_len, seq_len]
-        scores = torch.matmul(q, k.transpose(-2, -1)) / \
-            torch.sqrt(torch.tensor(self.input_dim,
-                       dtype=torch.float32, device=x.device))
-
-        assert mask is not None
-        scores = scores.masked_fill(mask.unsqueeze(
-            1).unsqueeze(2) == 0, float('-inf'))
-
-        # shape: [batch_size, num_heads, seq_len, seq_len]
-        attn_weights = F.softmax(scores, dim=-1)
-
-        attn_weights = self.dropout(attn_weights)
-
-        # shape: [batch_size, num_heads, seq_len, input_dim]
-        attn_output = torch.matmul(attn_weights, v)
-
-        attn_output = attn_output.masked_fill(
-            mask.unsqueeze(1).unsqueeze(3) == 0, float(0))
-
-        # Concatenation and linear transformation
-        attn_output = attn_output.transpose(1, 2).contiguous().view(
-            b, n, -1)  # shape: [batch_size, seq_len, num_heads*input_dim]
-        # shape: [batch_size, seq_len, input_dim]
-        output = self.fc(attn_output)
-
-        return output
-
-
-class TimeEmbedding(nn.Module):
-    def __init__(self, args):
-        super().__init__()
-        self.periodic = nn.Linear(1, args.embed_time-1)
-        self.linear = nn.Linear(1, 1)
-        utils.init_network_weights(self.periodic)
-        utils.init_network_weights(self.linear)
-
-    def forward(self, tt):
-        out2 = torch.sin(self.periodic(tt))
-        out1 = self.linear(tt)
-        return torch.cat([out1, out2], -1)
-
-    @torch.no_grad()
-    def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
-        """
-        Take a conditioning sequence of indices idx (LongTensor of shape (b,t)) and complete
-        the sequence max_new_tokens times, feeding the predictions back into the model each time.
-        Most likely you'll want to make sure to be in model.eval() mode of operation for this.
-        """
-        for _ in range(max_new_tokens):
-            # if the sequence context is growing too long we must crop it at block_size
-            idx_cond = idx if idx.size(
-                1) <= self.config.block_size else idx[:, -self.config.block_size:]
-            # forward the model to get the logits for the index in the sequence
-            logits, _ = self(idx_cond)
-            # pluck the logits at the final step and scale by desired temperature
-            logits = logits[:, -1, :] / temperature
-            # optionally crop the logits to only the top k options
-            if top_k is not None:
-                v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
-                logits[logits < v[:, [-1]]] = -float('Inf')
-            # apply softmax to convert logits to (normalized) probabilities
-            probs = F.softmax(logits, dim=-1)
-            # sample from the distribution
-            idx_next = torch.multinomial(probs, num_samples=1)
-            # append sampled index to the running sequence and continue
-            idx = torch.cat((idx, idx_next), dim=1)
-
-        return idx
-
-    def run_validation(self, batch):
-        return self.forward(batch)
-
-
 # @torch.jit.script # good to enable when not using torch.compile, disable when using (our default)
 def new_gelu(x):
     """
@@ -237,6 +137,7 @@ class TimeEmbedding(nn.Module):
         utils.init_network_weights(self.linear)
 
     def forward(self, tt):
+        tt = torch.log(tt + 1e-5)
         out2 = torch.sin(self.periodic(tt))
         out1 = self.linear(tt)
         return torch.cat([out1, out2], -1)

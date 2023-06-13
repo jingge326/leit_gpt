@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("--random-state", type=int, default=1, help="Random seed")
 parser.add_argument("--proj-path", type=str,
                     default=str(Path(__file__).parents[0]))
-parser.add_argument("--test-info", default="first_test")
+parser.add_argument("--test-info", default="test")
 parser.add_argument("--leit-model", default="gpts",
                     choices=["gpts", "ivp_vae", "ivp_vae_old", "red_vae", "classic_rnn", "mtan",
                              "raindrop", "ckconv", "cru", "gob", "grud",
@@ -32,8 +32,8 @@ parser.add_argument("--patience", type=int, default=5,
                     help="Early stopping patience")
 parser.add_argument("--weight-decay", type=float,
                     default=0.0001, help="Weight decay (regularization)")
-parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
-parser.add_argument("--lr-scheduler-step", type=int, default=20,
+parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
+parser.add_argument("--lr-scheduler-step", type=int, default=40,
                     help="Every how many steps to perform lr decay")
 parser.add_argument("--lr-decay", type=float, default=0.5,
                     help="Multiplicative lr decay factor")
@@ -256,9 +256,9 @@ parser.add_argument('--invertible', type=int, default=1,
                     help='If network is invertible', choices=[0, 1])
 
 # GPTS specific args
-parser.add_argument("--mhatt_n_layer", type=int, default=10)
+parser.add_argument("--mhatt_n_layer", type=int, default=1)
 parser.add_argument("--n_embd", type=int, default=768)
-parser.add_argument("--n_head", type=int, default=12)
+parser.add_argument("--nhead_com", type=int, default=4)
 parser.add_argument("--seq_len_min", type=int, default=10)
 parser.add_argument("--seq_len_max", type=int, default=256)
 parser.add_argument("bias", action='store_true')

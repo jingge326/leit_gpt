@@ -26,8 +26,13 @@ class Exp_Pretrain:
         self.patience = args.patience
         self.proj_path = Path(args.proj_path)
         self.mf = ModelFactory(self.args)
+        self.tags = ["gpts",
+                     "nhead"+str(self.args.nhead),
+                     "nlyrs"+str(self.args.mhatt_n_layer),
+                     "bsize"+str(self.args.batch_size),
+                     args.test_info]
 
-        self.args.exp_name = '_'.join(["gpts", args.test_info])
+        self.args.exp_name = '_'.join(self.tags)
 
         torch.manual_seed(args.random_state)
         np.random.seed(args.random_state)
@@ -64,18 +69,12 @@ class Exp_Pretrain:
             # initialize weight and bias
             if self.args.model_type != "initialize":
                 os.environ["WANDB_MODE"] = "dryrun"
-            tags = [
-                "nhead"+str(self.args.nhead),
-                "nlyrs"+str(self.args.mhatt_n_layer),
-                "bsize"+str(self.args.batch_size),
-            ]
-            tags.append(self.args.test_info)
             os.environ["WANDB__SERVICE_WAIT"] = "1800"
             wandb.init(
                 project="leit_gpt",
                 config=copy.deepcopy(dict(self.args._get_kwargs())),
-                group="_".join(tags),
-                tags=tags,
+                group="_".join(self.tags),
+                tags=self.tags,
                 name="r"+str(self.args.random_state))
 
     def get_data(self):
@@ -158,6 +157,7 @@ class Exp_Pretrain:
 
             for batch in self.dltrain:
                 # Single training step
+
                 self.optim.zero_grad()
                 train_loss = self.training_step(batch)
                 train_loss.backward()
