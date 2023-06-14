@@ -26,7 +26,7 @@ class Exp_Person_Activity(BaseExperiment):
                 model = mf.reconstruct_pl_biclass_model(
                     model, args.load_para_path)
             else:
-                model = mf.reconstruct_biclass_model(
+                model = mf.reconstruct_models(
                     model, args.load_para_path)
 
         elif args.model_type == 'load':

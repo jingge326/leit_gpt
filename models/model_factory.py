@@ -21,8 +21,9 @@ from models.models_length import Leit_Length
 
 
 class ModelFactory:
-    def __init__(self, args):
+    def __init__(self, args, logger):
         self.args = args
+        self.logger = logger
 
     def build_ivp_solver(self, states_dim):
         ivp_solver = None
@@ -113,14 +114,26 @@ class ModelFactory:
         model.load_state_dict(state_dict, strict=True)
         return model
 
-    def reconstruct_biclass_model(self, model, load_para_path):
-        model.load_state_dict(torch.load(
-            load_para_path, map_location=self.args.device), strict=False)
-        return model
+    def reconstruct_models(self, model, load_para_path):
+        loaded_state_dict = torch.load(
+            load_para_path, map_location=self.args.device)
 
-    def reconstruct_length_model(self, model, load_para_path):
-        model.load_state_dict(torch.load(
-            load_para_path, map_location=self.args.device), strict=False)
+        del_keys = ["input_lyr.bias", "input_lyr.weight",
+                    "lm_head.weight", "lm_head.bias"]
+        for key in del_keys:
+            del loaded_state_dict[key]
+
+        keys_bad = model.load_state_dict(loaded_state_dict, strict=False)
+
+        # Print the missing and unexpected keys
+        self.logger.info("Missing keys:")
+        for key in keys_bad.missing_keys:
+            self.logger.info(key)
+
+        self.logger.info("Unexpected keys:")
+        for key in keys_bad.unexpected_keys:
+            self.logger.info(key)
+
         return model
 
     def initialize_biclass_model(self):
@@ -136,7 +149,7 @@ class ModelFactory:
 
         elif self.args.leit_model == 'gpts':
             return GPTS_BiClass(args=self.args)
-            
+
         elif self.args.leit_model == 'ivp_vae_old':
             embedding_nn, diffeq_solver, reconst_mapper = self.init_ivpvae_components()
 

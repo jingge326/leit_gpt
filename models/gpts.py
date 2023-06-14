@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from experiments.utils_mtan import compute_log_normal_pdf, mean_squared_error
+
 
 import utils
 
@@ -193,22 +193,7 @@ class GPTS(nn.Module):
             x = block(x)
         x = self.ln_f(x)
 
-        if self.args.ml_task == "pretrain":
-            # if we are given some desired targets also calculate the loss
-            results["gen_values"] = self.lm_head(x)
-            results['forward_time'] = time.time() - self.time_start
-            rec_likelihood = compute_log_normal_pdf(
-                data_in[:, 1:, :], mask_in[:, 1:, :], results["gen_values"][:, :-1, :], self.args)
-            results["loss"] = -rec_likelihood.mean()
-        else:
-            # inference-time mini-optimization: only forward the lm_head on the very last position
-            # note: using list [-1] to preserve the time dim
-            results["gen_values"] = self.lm_head(x[:, [-1], :])
-            results['forward_time'] = time.time() - self.time_start
-            results["loss"] = None
-
-        results["mse"] = mean_squared_error(
-            data_in[:, 1:, :], results["gen_values"][:, :-1, :], mask=mask_in[:, 1:, :]).detach()
+        results["latent_states"] = x
 
         return results
 
@@ -365,6 +350,3 @@ class GPTS(nn.Module):
             idx = torch.cat((idx, idx_next), dim=1)
 
         return idx
-
-    def run_validation(self, batch):
-        return self.forward(batch)

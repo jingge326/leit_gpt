@@ -4,7 +4,6 @@ import os
 from pathlib import Path
 import random
 import time
-from models.gpts import GPTS
 import numpy as np
 import pandas as pd
 import sklearn
@@ -15,6 +14,7 @@ from torch.utils.data import DataLoader
 
 from experiments.data_mimic import MIMICDatasetGP, collate_fn_gpts, load_tvt
 from models.model_factory import ModelFactory
+from models.models_pretrain import GPTS_PreTrain
 from utils import record_experiment
 
 
@@ -44,7 +44,7 @@ class Exp_Pretrain:
 
         self.dltrain, self.dlval = self.get_data()
 
-        self.model = GPTS(args=self.args).to(self.device)
+        self.model = GPTS_PreTrain(args=self.args).to(self.device)
 
         self.logger.info(f'num_params={self.model.num_params}')
 
@@ -110,7 +110,7 @@ class Exp_Pretrain:
                 model = self.mf.reconstruct_pl_biclass_model(
                     model, self.args.load_para_path)
             else:
-                model = self.mf.reconstruct_biclass_model(
+                model = self.mf.reconstruct_models(
                     model, self.args.load_para_path)
 
         elif self.args.model_type == 'load':
@@ -222,6 +222,7 @@ class Exp_Pretrain:
         if self.args.log_tool == "wandb":
             wandb.log(
                 {"val_forward_time": results['forward_time'], "epoch_id": epoch})
+            wandb.log({"val_mse": results['mse'], "epoch_id": epoch})
         if results['val_loss'] != 0:
             return results['val_loss']
         else:

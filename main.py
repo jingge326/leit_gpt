@@ -40,7 +40,8 @@ parser.add_argument("--lr-decay", type=float, default=0.5,
 parser.add_argument("--clip-gradient", action='store_false')
 parser.add_argument("--clip", type=float, default=1)
 parser.add_argument("--not-vae", action='store_false')
-parser.add_argument("--para-file-type", default="pl_ckpt")
+parser.add_argument("--para-file-type", default="pl_ckpt",
+                    choices=["pl_ckpt", "pt"])
 parser.add_argument("--freeze-opt", default="unfreeze",
                     choices=["unfreeze", "odevae", "embedding", "flow", "encoder_flow", "decoder"])
 parser.add_argument("--num-class", type=int, default=11)
@@ -261,7 +262,9 @@ parser.add_argument("--n_embd", type=int, default=768)
 parser.add_argument("--nhead_com", type=int, default=4)
 parser.add_argument("--seq_len_min", type=int, default=10)
 parser.add_argument("--seq_len_max", type=int, default=256)
-parser.add_argument("bias", action='store_true')
+parser.add_argument("--bias", action='store_true')
+parser.add_argument("--gpts_output", default="last", choices=["all", "last"])
+parser.add_argument("--pre_model", default="gpts_test.pt")
 
 
 if __name__ == "__main__":
@@ -277,12 +280,12 @@ if __name__ == "__main__":
     else:
         raise ValueError("Unknown")
 
-    try:
-        experiment.run()
-        experiment.finish()
-    except Exception:
-        with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
-            print(traceback.format_exc(), file=fout)
+    # try:
+    #     experiment.run()
+    #     experiment.finish()
+    # except Exception:
+    #     with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
+    #         print(traceback.format_exc(), file=fout)
 
-    # experiment.run()
-    # experiment.finish()
+    experiment.run()
+    experiment.finish()

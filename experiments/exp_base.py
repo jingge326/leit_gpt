@@ -31,7 +31,6 @@ class BaseExperiment:
         self.epochs_max = args.epochs_max
         self.patience = args.patience
         self.proj_path = Path(args.proj_path)
-        self.mf = ModelFactory(self.args)
         name_base = '_'.join(
             [args.leit_model, args.ml_task, args.data, ("r"+str(args.random_state)), args.model_type, ])
         if self.args.leit_model == 'red_vae':
@@ -59,6 +58,7 @@ class BaseExperiment:
         random.seed(args.random_state)
 
         self._init_logger()
+        self.mf = ModelFactory(self.args, self.logger)
         self.device = torch.device(args.device)
         self.logger.info(f'Device: {self.device}')
 
@@ -119,28 +119,12 @@ class BaseExperiment:
             raise ValueError("Unknown")
 
         if self.args.model_type != "initialize":
-            model = self.update_model(model)
+            model = self.mf.reconstruct_models(
+                model, self.proj_path/('temp/model/'+self.args.pre_model))
 
         return model
 
-    def update_model(self, model):
-        if self.args.model_type == 'reconstruct':
-            print('former_ehr_variable_num: ' +
-                  str(self.args.former_ehr_variable_num))
-            if self.args.para_file_type == 'pl_ckpt':
-                model = self.mf.reconstruct_pl_biclass_model(
-                    model, self.args.load_para_path)
-            else:
-                model = self.mf.reconstruct_biclass_model(
-                    model, self.args.load_para_path)
-
-        elif self.args.model_type == 'load':
-            if self.args.para_file_type == 'pl_ckpt':
-                model = self.mf.load_pl_mortality_model(
-                    model, self.args.load_para_path)
-            else:
-                model.load_state_dict(torch.load(
-                    self.args.load_para_path, map_location=self.args.device))
+    def update_pretrained_modules(self, model, bool_flag=True):
 
         if self.args.freeze_opt == 'odevae':
             model.embedding_nn.requires_grad_(False)

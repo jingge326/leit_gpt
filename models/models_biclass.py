@@ -77,22 +77,26 @@ class GPTS_BiClass(GPTS):
         super().__init__(args)
         # Classification
         self.args = args
-        self.attn_inte_lyr = nn.Sequential(
-            nn.Linear(args.attn_dim, 1),
-            nn.ReLU())
-        self.dropout = nn.Dropout(args.dropout)
-        self.classifier = BinaryClassifier(self.args.latent_dim)
+        if self.args.gpts_output == "all":
+            self.attn_inte_lyr = nn.Sequential(
+                nn.Linear(args.n_embd, 1),
+                nn.ReLU())
+            self.dropout = nn.Dropout(args.dropout)
+        self.classifier = BinaryClassifier(self.args.n_embd)
 
     def compute_prediction_results(self, batch):
-        forward_info = self.forward(batch)
-        score = self.attn_inte_lyr(forward_info['latent_states'])
-        score = self.softmax_with_mask(score, batch['exist_times'], dim=1)
-        score = self.dropout(score)
-        c_input = torch.sum(score * forward_info['latent_states'], dim=-2)
+        results = self.forward(batch)
+        if self.args.gpts_output == "all":
+            score = self.attn_inte_lyr(results["latent_states"])
+            score = self.softmax_with_mask(score, batch['exist_times'], dim=1)
+            score = self.dropout(score)
+            c_input = torch.sum(score * results["latent_states"], dim=-2)
+        else:
+            c_input = results["latent_states"][:, -1, :]
 
         # squeeze to remove the time dimension
         label_pred = self.classifier(c_input)
-        results = {}
+
         results['forward_time'] = time.time() - self.time_start
 
         # Compute CE loss
