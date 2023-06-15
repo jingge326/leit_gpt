@@ -84,6 +84,13 @@ class GPTS_BiClass(GPTS):
             self.dropout = nn.Dropout(args.dropout)
         self.classifier = BinaryClassifier(self.args.n_embd)
 
+    def softmax_with_mask(self, input, mask, dim):
+        if len(mask.shape) == 2:
+            mask = mask.unsqueeze(-1)
+        output = torch.exp(input) * mask
+        output = output / torch.sum(output, dim=dim, keepdim=True)
+        return output
+
     def compute_prediction_results(self, batch):
         results = self.forward(batch)
         if self.args.gpts_output == "all":

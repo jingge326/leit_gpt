@@ -226,6 +226,7 @@ def scale_tvt(args, data_train, data_validation, data_test, logger):
 
         df_tv = pd.concat([val_train, val_validation])
         df_tvt = pd.concat([val_train, val_validation, val_test])
+
         mean_tv, std_tv = utils.calc_mean_std(df_tv)
         mean_t, std_t = utils.calc_mean_std(df_tvt)
 

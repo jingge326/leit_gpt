@@ -64,6 +64,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
             "args": [
+                "--random-state",
+                "3",
                 "--data",
                 "p12",
                 "--variable-num",
@@ -88,7 +90,7 @@
                 "--log-tool",
                 "logging",
                 "--test-info",
-                "all"
+                "all_r3"
             ],
             "console": "integratedTerminal"
         }
