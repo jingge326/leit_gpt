@@ -87,10 +87,42 @@
                 "all",
                 "--batch-size",
                 "64",
-                "--log-tool",
-                "logging",
                 "--test-info",
-                "all_r3"
+                "all"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "P12-BiClass-GPTS-all-Scratch",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": [
+                "--device",
+                "cuda:1",
+                "--data",
+                "p12",
+                "--variable-num",
+                "41",
+                "--time-max",
+                "1439",
+                "--num-times",
+                "1440",
+                "--ml-task",
+                "biclass",
+                "--model-type",
+                "initialize",
+                "--mhatt_n_layer",
+                "4",
+                "--n_embd",
+                "240",
+                "--bias",
+                "--gpts_output",
+                "all",
+                "--batch-size",
+                "64",
+                "--test-info",
+                "all"
             ],
             "console": "integratedTerminal"
         }

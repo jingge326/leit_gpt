@@ -1,4 +1,5 @@
 import time
+
 import torch
 import torch.nn as nn
 from experiments.utils_metrics import masked_gaussian_log_density
@@ -13,10 +14,76 @@ from models.baselines.gru_ode_bayes import NNFOwithBayesianJumps
 from models.baselines.grud import GRUD
 from models.baselines.mtan import MTAN
 from models.baselines.red_vae import REDVAE
+from models.gpts import GPTS
 from models.ivp_auto import IVPAuto
 from models.ivp_vae import IVPVAE
 from models.ivpvae_old import IVPVAE_OLD
 from utils import log_lik_gaussian_simple
+
+
+class GPTS_Extrap(GPTS):
+    def __init__(self, args):
+
+        super().__init__(args)
+        self.args = args
+        if self.args.extrap_method == 'mlp':
+            self.extrap_mlp = MLP(
+                in_dim=self.args.latent_dim + 1,
+                hidden_dims=[128, 128],
+                out_dim=20,
+                activation='ReLU',
+                final_activation='ReLU')
+
+    def compute_prediction_results(self, batch):
+        results = dict.fromkeys(['forward_time', 'mse', 'loss'])
+        forward_info = self.forward(batch)
+
+        next_data = batch['data_out']
+        mask_out = batch['mask_out']
+        next_times = batch['times_out']
+
+        last_hidden = forward_info['hidden_state']
+        if self.args.extrap_method == 'mlp':
+            # repeat last_hidden for all next_times and concat the time info to the last hidden state
+            features = torch.cat((last_hidden.unsqueeze(1).repeat(
+                1, next_times.size(1), 1), next_times.unsqueeze(-1)), dim=-1)
+            hiddens = self.extrap_mlp(features)
+            pred_x = self.rec_lyr(hiddens).unsqueeze(0)
+        elif self.args.extrap_method == 'seq2seq':
+            last_time = batch['times_in'].max(dim=-1, keepdim=True)[0]
+            next_times = torch.cat((last_time, next_times), dim=1)
+            delta_ts = next_times[:, 1:] - next_times[:, :-1]
+            full_mask = torch.ones_like(mask_out)
+            pred_x = self.generate_seq(
+                first_hidden=last_hidden,
+                delta_ts=delta_ts,
+                cell=self.rnn_cell,
+                decoder=self.rec_lyr,
+                mask=full_mask)
+        else:
+            raise NotImplementedError
+
+        results['forward_time'] = time.time() - self.time_start
+        # Compute likelihood
+        next_data = next_data.repeat(pred_x.size(0), 1, 1, 1)
+        mask_out = mask_out.repeat(pred_x.size(0), 1, 1, 1)
+
+        if self.args.fast_llloss == True:
+            log_ll = compute_log_normal_pdf(
+                next_data, mask_out, pred_x, self.args)
+        else:
+            log_ll = masked_gaussian_log_density(
+                pred_x, next_data, obsrv_std=self.obsrv_std, mask=mask_out)
+
+        loss_next = -torch.mean(log_ll)
+        mse_extrap = mean_squared_error(next_data, pred_x, mask=mask_out)
+
+        results["loss"] = loss_next
+        results["mse_extrap"] = torch.mean(mse_extrap).detach()
+        return results
+
+    def run_validation(self, batch):
+        return self.compute_prediction_results(batch)
 
 
 class IVPVAE_Extrap(IVPVAE):

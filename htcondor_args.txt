@@ -1,1 +1,0 @@
---random-state=1;--mhatt_n_layer=4;--n_embd=240;--batch-size=64;--test-info=test
