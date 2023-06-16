@@ -1,6 +1,6 @@
 #!/bin/bash
 
-args_in="--random-state=1;--device=cuda:1;--data=p12;--variable-num=41;--time-max=1439;--num-times=1440;--ml-task=biclass;--model-type=initialize;--mhatt_n_layer=4;--n_embd=240;--bias;--gpts_output=all;--batch-size=64;--test-info=all"
+args_in="--random-state=1;--evolve_module=ivp;--mhatt_n_layer=4;--n_embd=240;--batch-size=64;--device=cuda:1;--test-info=evolve_ivp"
 
 main="/home/xiao/project/leit_gpt/main.py"
 

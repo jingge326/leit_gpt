@@ -10,7 +10,7 @@
             "justMyCode": true
         },
         {
-            "name": "M4-PreTrain-GPTS",
+            "name": "M4-PreTrain-GPTS-Delta",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
@@ -21,8 +21,33 @@
                 "240",
                 "--batch-size",
                 "64",
+                "--log-tool",
+                "logging",
                 "--test-info",
-                "test"
+                "evolve_delta"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "M4-PreTrain-GPTS-IVP",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": [
+                "--evolve_module",
+                "ivp",
+                "--mhatt_n_layer",
+                "4",
+                "--n_embd",
+                "240",
+                "--batch-size",
+                "64",
+                "--log-tool",
+                "logging",
+                "--device",
+                "cuda:1",
+                "--test-info",
+                "evolve_ivp"
             ],
             "console": "integratedTerminal"
         },

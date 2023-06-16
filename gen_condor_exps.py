@@ -7,7 +7,7 @@ if __name__ == "__main__":
 
     list_exp = []
     list_exp.extend(
-        ["P12-BiClass-GPTS-all"])
+        ["M4-PreTrain-GPTS-IVP"])
 
     seeds_start = 1
     seeds_stop = 1

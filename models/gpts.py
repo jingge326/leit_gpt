@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-
+from models.ivp_solvers import CouplingFlow, ODEModel, ResNetFlow, GRUFlow
 import utils
 
 
@@ -143,11 +143,52 @@ class TimeEmbedding(nn.Module):
         return torch.cat([out1, out2], -1)
 
 
+def build_ivp_solver(args):
+    ivp_solver = None
+    hidden_dims = [args.hidden_dim] * args.hidden_layers
+    if args.ivp_solver == 'ode':
+        ivp_solver = utils.SolverWrapper(ODEModel(args.n_embd, args.odenet, hidden_dims, args.activation,
+                                                  args.final_activation, args.ode_solver, args.solver_step, args.atol, args.rtol))
+    else:
+        if args.ivp_solver == 'couplingflow':
+            flow = CouplingFlow
+        elif args.ivp_solver == 'resnetflow':
+            flow = ResNetFlow
+        elif args.ivp_solver == 'gruflow':
+            flow = GRUFlow
+        else:
+            raise NotImplementedError
+
+        ivp_solver = utils.SolverWrapper(flow(
+            args.n_embd, args.flow_layers, hidden_dims, args.time_net, args.time_hidden_dim))
+    return ivp_solver
+
+
+class StatesMapper(nn.Module):
+    def __init__(self, args):
+        super().__init__()
+        self.mapper = torch.nn.Sequential(nn.Linear(args.n_embd + 1, args.n_embd + 1),
+                                          nn.ReLU(),
+                                          nn.Linear(args.n_embd + 1, args.n_embd))
+
+    def forward(self, x, t, backwards=False):
+        assert len(x.shape) - len(t.shape) == 1
+        t = t.unsqueeze(-1)
+        if t.shape[-3] == 1:
+            t = t.repeat_interleave(x.shape[-3], dim=-3)
+        if len(x.shape) == 4 and x.shape[0] != t.shape[0]:
+            t = t.repeat_interleave(x.shape[0], dim=0)
+        x = torch.cat([x, t], dim=-1)
+        y = self.mapper(x)
+        return y
+
+
 class GPTS(nn.Module):
 
     def __init__(self, args):
         super().__init__()
         self.args = args
+        self.register_buffer('zero_tensor', torch.zeros([1]))
         self.input_lyr = nn.Linear(
             args.variable_num * 2 + args.embed_time, args.n_embd)
         self.dropout = nn.Dropout(args.dropout)
@@ -156,6 +197,13 @@ class GPTS(nn.Module):
         self.ln_f = LayerNorm(args.n_embd, bias=args.bias)
         self.lm_head = nn.Linear(args.n_embd, args.variable_num)
         self.time_embedding = TimeEmbedding(args)
+
+        if args.evolve_module == "ivp":
+            self.evolve = build_ivp_solver(args)
+        elif args.evolve_module == "delta_t":
+            self.evolve = StatesMapper(args)
+        else:
+            raise NotImplementedError
 
         # init all weights
         self.apply(self._init_weights)

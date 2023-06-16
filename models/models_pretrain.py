@@ -12,7 +12,14 @@ class GPTS_PreTrain(GPTS):
 
     def compute_prediction_results(self, batch):
         results = self.forward(batch)
-        results["gen_values"] = self.lm_head(results["latent_states"])
+        times = batch['times_in']
+
+        self.zero_delta_t = self.zero_tensor.repeat(times.size(0), 1)
+        delta_ts = times[:, 1:] - times[:, :-1]
+        delta_ts = torch.cat((delta_ts, self.zero_delta_t), dim=1)
+
+        evolved_states = self.evolve(results["latent_states"], delta_ts)
+        results["gen_values"] = self.lm_head(evolved_states)
         results['forward_time'] = time.time() - self.time_start
 
         rec_likelihood = compute_log_normal_pdf(

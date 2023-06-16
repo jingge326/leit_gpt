@@ -25,14 +25,14 @@ class Exp_Pretrain:
         self.epochs_max = args.epochs_max
         self.patience = args.patience
         self.proj_path = Path(args.proj_path)
-        self.mf = ModelFactory(self.args)
         self.tags = ["gpts",
                      "nhead"+str(self.args.nhead),
                      "nlyrs"+str(self.args.mhatt_n_layer),
                      "bsize"+str(self.args.batch_size),
                      args.test_info]
 
-        self.args.exp_name = '_'.join(self.tags)
+        self.args.exp_name = '_'.join(
+            self.tags + [("r"+str(args.random_state)), args.model_type])
 
         torch.manual_seed(args.random_state)
         np.random.seed(args.random_state)
@@ -101,47 +101,6 @@ class Exp_Pretrain:
             batch_size=self.args.batch_size)
 
         return dl_train, dl_val
-
-    def update_model(self, model):
-        if self.args.model_type == 'reconstruct':
-            print('former_ehr_variable_num: ' +
-                  str(self.args.former_ehr_variable_num))
-            if self.args.para_file_type == 'pl_ckpt':
-                model = self.mf.reconstruct_pl_biclass_model(
-                    model, self.args.load_para_path)
-            else:
-                model = self.mf.reconstruct_models(
-                    model, self.args.load_para_path)
-
-        elif self.args.model_type == 'load':
-            if self.args.para_file_type == 'pl_ckpt':
-                model = self.mf.load_pl_mortality_model(
-                    model, self.args.load_para_path)
-            else:
-                model.load_state_dict(torch.load(
-                    self.args.load_para_path, map_location=self.args.device))
-
-        if self.args.freeze_opt == 'odevae':
-            model.embedding_nn.requires_grad_(False)
-            model.encoder_z0.requires_grad_(False)
-            model.diffeq_solver.requires_grad_(False)
-            model.reconst_mapper.requires_grad_(False)
-        elif self.args.freeze_opt == 'embedding':
-            model.embedding_nn.requires_grad_(False)
-        elif self.args.freeze_opt == 'embedding_nn_gc':
-            model.embedding_nn.gc.requires_grad_(False)
-        elif self.args.freeze_opt == 'flow':
-            model.embedding_nn.requires_grad_(False)
-            model.encoder_z0.z0_diffeq_solver.requires_grad_(False)
-            model.diffeq_solver.requires_grad_(False)
-        elif self.args.freeze_opt == 'encoder_flow':
-            model.embedding_nn.requires_grad_(False)
-            model.encoder_z0.z0_diffeq_solver.requires_grad_(False)
-        elif self.args.freeze_opt == 'decoder':
-            model.embedding_nn.requires_grad_(False)
-            model.diffeq_solver.requires_grad_(False)
-
-        return model
 
     def run(self) -> None:
         # Training loop parameters
@@ -213,7 +172,7 @@ class Exp_Pretrain:
             wandb.log({"epoch_duration_mean": np.mean(durations), "run_id": 1})
 
     def training_step(self, batch):
-        return self.model(batch)["loss"]
+        return self.model.compute_prediction_results(batch)["loss"]
 
     def validation_step(self, epoch):
         results = self.compute_results_all_batches(self.dlval)

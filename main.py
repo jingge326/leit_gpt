@@ -87,6 +87,8 @@ parser.add_argument('--mask-drop-rate', type=float, default=0.0)
 # Args for IVP solvers
 parser.add_argument("--ivp-solver", default="resnetflow",
                     choices=["resnetflow", "couplingflow", "gruflow", "ode"])
+parser.add_argument("--flow-layers", type=int, default=2,
+                    help="Number of flow layers")
 parser.add_argument("--hidden-layers", type=int, default=3,
                     help="Number of hidden layers")
 parser.add_argument("--hidden-dim", type=int, default=128,
@@ -105,8 +107,6 @@ parser.add_argument("--atol", type=float, default=1e-4,
                     help="Absolute tolerance")
 parser.add_argument("--rtol", type=float, default=1e-3,
                     help="Relative tolerance")
-parser.add_argument("--flow-layers", type=int, default=2,
-                    help="Number of flow layers")
 parser.add_argument("--time-net", type=str, default="TimeTanh", help="Name of time net",
                     choices=["TimeFourier", "TimeFourierBounded", "TimeLinear", "TimeTanh"])
 parser.add_argument("--time-hidden-dim", type=int, default=8,
@@ -265,6 +265,8 @@ parser.add_argument("--seq_len_max", type=int, default=256)
 parser.add_argument("--bias", action='store_true')
 parser.add_argument("--gpts_output", default="last", choices=["all", "last"])
 parser.add_argument("--pre_model", default="gpts_test.pt")
+parser.add_argument("--evolve_module", default="delta_t",
+                    choices=["ivp", "delta_t"])
 
 
 if __name__ == "__main__":
