@@ -264,7 +264,8 @@ parser.add_argument("--seq_len_min", type=int, default=10)
 parser.add_argument("--seq_len_max", type=int, default=256)
 parser.add_argument("--bias", action='store_true')
 parser.add_argument("--gpts_output", default="last", choices=["all", "last"])
-parser.add_argument("--pre_model", default="gpts_test.pt")
+parser.add_argument(
+    "--pre_model", default="gpts_nhead12_nlyrs4_bsize64_evolve_ivp_r1_initialize.pt")
 parser.add_argument("--evolve_module", default="delta_t",
                     choices=["ivp", "delta_t"])
 

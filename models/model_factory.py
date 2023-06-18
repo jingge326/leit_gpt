@@ -15,7 +15,7 @@ from models.pl_wrapper import PL_Wrapper
 
 from utils import SolverWrapper
 from models.ivp_vae import IVPVAE
-from models.models_extrap import AttIVPVAE_Extrap, CKCONV_Extrap, CRU_Extrap, ClassicRNN_Extrap, GOB_Extrap, GRUD_Extrap, IVPAuto_Extrap, IVPAuto_Extrap, IVPVAE_Extrap, IVPVAE_OLD_Extrap, MTAN_Extrap, REDVAE_Extrap
+from models.models_extrap import AttIVPVAE_Extrap, CKCONV_Extrap, CRU_Extrap, ClassicRNN_Extrap, GOB_Extrap, GPTS_Extrap, GRUD_Extrap, IVPAuto_Extrap, IVPAuto_Extrap, IVPVAE_Extrap, IVPVAE_OLD_Extrap, MTAN_Extrap, REDVAE_Extrap
 from models.models_biclass import AttIVPVAE_BiClass, ClassicRNN_BiClass, GPTS_BiClass, GRUD_BiClass, IVPAuto_BiClass, IVPVAE_OLD_BiClass, MTAN_BiClass, MTANIVP_BiClass, IVPVAE_BiClass, REDVAE_BiClass, Raindrop_BiClass, CKCONV_BiClass
 from models.models_length import Leit_Length
 
@@ -114,16 +114,17 @@ class ModelFactory:
         model.load_state_dict(state_dict, strict=True)
         return model
 
-    def reconstruct_models(self, model, load_para_path):
+    def reconstruct_models(self, model, load_para_path, strict=False):
         loaded_state_dict = torch.load(
             load_para_path, map_location=self.args.device)
 
-        del_keys = ["input_lyr.bias", "input_lyr.weight",
-                    "lm_head.weight", "lm_head.bias"]
-        for key in del_keys:
-            del loaded_state_dict[key]
+        if strict == False:
+            del_keys = ["input_lyr.bias", "input_lyr.weight",
+                        "lm_head.weight", "lm_head.bias"]
+            for key in del_keys:
+                del loaded_state_dict[key]
 
-        keys_bad = model.load_state_dict(loaded_state_dict, strict=False)
+        keys_bad = model.load_state_dict(loaded_state_dict, strict)
 
         # Print the missing and unexpected keys
         self.logger.info("Missing keys:")
@@ -420,6 +421,9 @@ class ModelFactory:
 
         elif self.args.leit_model == 'gob':
             return GOB_Extrap(args=self.args)
+
+        elif self.args.leit_model == 'gpts':
+            return GPTS_Extrap(args=self.args)
 
         else:
             raise ValueError('Wrong LEIT model!')

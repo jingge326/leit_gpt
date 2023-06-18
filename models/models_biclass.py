@@ -99,7 +99,10 @@ class GPTS_BiClass(GPTS):
             score = self.dropout(score)
             c_input = torch.sum(score * results["latent_states"], dim=-2)
         else:
-            c_input = results["latent_states"][:, -1, :]
+            exist_edge = torch.logical_xor(torch.concat([batch['exist_times'][:, 1:], torch.zeros(
+                batch['exist_times'].shape[0], 1).to(batch["data_in"])], dim=-1), batch['exist_times'])
+            c_input = (results["latent_states"] *
+                       exist_edge.unsqueeze(-1)).sum(dim=-2)
 
         # squeeze to remove the time dimension
         label_pred = self.classifier(c_input)

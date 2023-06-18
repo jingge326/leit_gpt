@@ -26,13 +26,15 @@ class Exp_Pretrain:
         self.patience = args.patience
         self.proj_path = Path(args.proj_path)
         self.tags = ["gpts",
+                     self.args.ml_task,
+                     self.args.model_type,
                      "nhead"+str(self.args.nhead),
                      "nlyrs"+str(self.args.mhatt_n_layer),
                      "bsize"+str(self.args.batch_size),
                      args.test_info]
 
         self.args.exp_name = '_'.join(
-            self.tags + [("r"+str(args.random_state)), args.model_type])
+            self.tags + [("r"+str(args.random_state))])
 
         torch.manual_seed(args.random_state)
         np.random.seed(args.random_state)
@@ -41,10 +43,15 @@ class Exp_Pretrain:
         self._init_logger()
         self.device = torch.device(args.device)
         self.logger.info(f'Device: {self.device}')
+        self.mf = ModelFactory(args, logger=self.logger)
 
         self.dltrain, self.dlval = self.get_data()
 
         self.model = GPTS_PreTrain(args=self.args).to(self.device)
+
+        if self.args.model_type == "reconstruct":
+            self.model = self.mf.reconstruct_models(
+                self.model, self.proj_path/('temp/model/'+self.args.pre_model), strict=True)
 
         self.logger.info(f'num_params={self.model.num_params}')
 

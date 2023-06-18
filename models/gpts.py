@@ -398,3 +398,33 @@ class GPTS(nn.Module):
             idx = torch.cat((idx, idx_next), dim=1)
 
         return idx
+
+    def generate_seq(self, previous_state, delta_ts):
+        n_steps = mask.size(1)
+        outputs = []
+        x = first_input
+        for i in range(n_steps):
+            delta_t = delta_ts[:, i:i+1]
+
+            time_embed = self.time_embedding(times_in.unsqueeze(-1))
+            x = torch.cat((data_in, mask_in, time_embed), dim=-1)
+            x = self.input_lyr(x)
+
+            for block in self.multi_attn_lyrs:
+                x = block(x)
+            x = self.ln_f(x)
+
+            results["latent_states"] = x
+
+            if mask is not None:
+                mask_i = mask[:, i, :]
+                x = torch.cat((x, mask_i), -1)
+
+            input_w_t = torch.cat((x, delta_t), -1).squeeze(1)
+            hidden = cell(input_w_t, hidden)
+            rnn_output = decoder(hidden)
+            outputs.append(rnn_output)
+            x = rnn_output
+
+        outputs = torch.stack(outputs, 0).permute(1, 0, 2).unsqueeze(0)
+        return outputs

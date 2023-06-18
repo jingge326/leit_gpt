@@ -917,6 +917,8 @@ def collate_fn_extrap(batch, num_vars, args):
         # The first time point should be larger than 0 after data processing
         assert times_in[:, 0].gt(0).all()
 
+        exist_times = mask_in.sum(dim=-1).gt(0)
+
         data_dict = {}
         data_dict["times_in"] = times_in
         data_dict["data_in"] = data_in
@@ -926,6 +928,7 @@ def collate_fn_extrap(batch, num_vars, args):
         data_dict["data_out"] = data_out
         data_dict["mask_out"] = mask_out
         data_dict["lengths_out"] = lengths_out
+        data_dict["exist_times"] = exist_times
 
         if args.extrap_full == True:
             mask_extrap = torch.zeros_like(times_out, dtype=torch.bool)
