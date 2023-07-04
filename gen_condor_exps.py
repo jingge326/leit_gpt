@@ -7,7 +7,7 @@ if __name__ == "__main__":
 
     list_exp = []
     list_exp.extend(
-        ["M4-PreTrain-GPTS-IVP-Reconstruct"])
+        ["P12-Extrap-GPTS-IVP-Init"])
 
     seeds_start = 1
     seeds_stop = 1

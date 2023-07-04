@@ -914,8 +914,8 @@ def collate_fn_extrap(batch, num_vars, args):
         lengths_in = torch.tensor(len_in_list).to(device)
         lengths_out = torch.tensor(len_out_list).to(device)
 
-        # The first time point should be larger than 0 after data processing
-        assert times_in[:, 0].gt(0).all()
+        # # The first time point should be larger than 0 after data processing
+        # assert times_in[:, 0].gt(0).all()
 
         exist_times = mask_in.sum(dim=-1).gt(0)
 

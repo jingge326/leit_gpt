@@ -1,5 +1,4 @@
 import time
-import gc
 
 import torch
 import torch.nn as nn
@@ -41,27 +40,46 @@ class GPTS_Extrap(GPTS):
         ts_new = exist_edge * batch["times_out"][:, [0]]
         delta_ts = delta_ts + ts_new
 
-        evolved_states = self.evolve(results["latent_states"], delta_ts)
-        pred_x = (self.lm_head(evolved_states) *
-                  exist_edge.unsqueeze(-1)).sum(dim=-2, keepdim=True)
+        # evolved_states = self.evolve(results["latent_states"], delta_ts)
+
+        latent_states = results["latent_states"]
+        B, T, C = latent_states.size()
+        latent_states = latent_states.view(
+            B, T, self.args.nhead, C // self.args.nhead).unsqueeze(-2)
+        delta_ts = delta_ts.view(B, T, 1, 1).repeat(1, 1, self.args.nhead, 1)
+
+        evolved_states = self.evolve(latent_states, delta_ts).view(B, T, C)
+
+        pred_x = torch.zeros_like(batch['data_out'])
+
+        pred_x[:, 0, :] = (self.lm_head(evolved_states) *
+                           exist_edge.unsqueeze(-1)).sum(dim=-2)
 
         for i in range(times_out.size(-1) - 1):
             delta_ts = times_out[:, 1:i+2] - times_out[:, :i+1]
             time_embed = self.time_embedding(times_out[:, :i+1].unsqueeze(-1))
-            x = torch.cat((pred_x, mask_gen[:, :i+1, :], time_embed), dim=-1)
+            x = torch.cat(
+                (pred_x[:, :i+1, :], mask_gen[:, :i+1, :], time_embed), dim=-1)
             x = self.input_lyr(x)
-            for block in self.multi_attn_lyrs:
-                x = block(x)
-            x = self.evolve(self.ln_f(x), delta_ts)
-            pred_x = torch.concat(
-                (pred_x, self.lm_head(x)[:, [-1], :]), dim=1)
+            x = self.multi_attn_lyrs(x)
+            x = self.ln_f(x)
+
+            B, T, C = x.size()
+            x = x.view(B, T, self.args.nhead, C //
+                       self.args.nhead).unsqueeze(-2)
+            delta_ts = delta_ts.view(B, T, 1, 1).repeat(
+                1, 1, self.args.nhead, 1)
+
+            x = self.evolve(x, delta_ts).view(B, T, C)
+
+            pred_x[:, i+1, :] = self.lm_head(x)[:, -1, :]
 
         rec_likelihood = compute_log_normal_pdf(
             batch['data_out'], batch['mask_out'], pred_x, self.args)
         results["loss"] = -rec_likelihood.mean()
 
         results["mse"] = mean_squared_error(
-            batch['data_in'], pred_x, mask=batch['mask_out']).detach()
+            batch['data_out'], pred_x, mask=batch['mask_out']).detach()
 
         return results
 

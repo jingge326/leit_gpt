@@ -18,7 +18,14 @@ class GPTS_PreTrain(GPTS):
         delta_ts = times[:, 1:] - times[:, :-1]
         delta_ts = torch.cat((delta_ts, self.zero_delta_t), dim=1)
 
-        evolved_states = self.evolve(results["latent_states"], delta_ts)
+        latent_states = results["latent_states"]
+        B, T, C = latent_states.size()
+        latent_states = latent_states.view(
+            B, T, self.args.nhead, C // self.args.nhead).unsqueeze(-2)
+        delta_ts = delta_ts.view(B, T, 1, 1).repeat(1, 1, self.args.nhead, 1)
+
+        evolved_states = self.evolve(latent_states, delta_ts).view(B, T, C)
+
         results["gen_values"] = self.lm_head(evolved_states)
         results['forward_time'] = time.time() - self.time_start
 

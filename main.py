@@ -68,7 +68,7 @@ parser.add_argument("--time-constant", type=float, default=1)
 parser.add_argument("--first-dim", default="batch",
                     choices=["batch", "time_series"])
 parser.add_argument("--batch-size", type=int, default=64)
-parser.add_argument("--t-offset", type=float, default=0.1)
+parser.add_argument("--t-offset", type=float, default=0)
 parser.add_argument("--ml-task", default="pretrain",
                     choices=["biclass", "extrap", "interp", "length", "pretrain"])
 parser.add_argument("--extrap-full", action='store_true')
@@ -259,13 +259,12 @@ parser.add_argument('--invertible', type=int, default=1,
 # GPTS specific args
 parser.add_argument("--mhatt_n_layer", type=int, default=1)
 parser.add_argument("--n_embd", type=int, default=768)
-parser.add_argument("--nhead_com", type=int, default=4)
-parser.add_argument("--seq_len_min", type=int, default=10)
+parser.add_argument("--seq_len_min", type=int, default=1)
 parser.add_argument("--seq_len_max", type=int, default=256)
 parser.add_argument("--bias", action='store_true')
 parser.add_argument("--gpts_output", default="last", choices=["all", "last"])
 parser.add_argument(
-    "--pre_model", default="gpts_nhead12_nlyrs4_bsize64_evolve_ivp_r1_initialize.pt")
+    "--pre_model", default="gpts_pretrain_initialize_nhead12_nlyrs4_bsize64_min2_r1.pt")
 parser.add_argument("--evolve_module", default="delta_t",
                     choices=["ivp", "delta_t"])
 

@@ -160,7 +160,7 @@ def build_ivp_solver(args):
             raise NotImplementedError
 
         ivp_solver = utils.SolverWrapper(flow(
-            args.n_embd, args.flow_layers, hidden_dims, args.time_net, args.time_hidden_dim))
+            args.n_embd//args.nhead, args.flow_layers, hidden_dims, args.time_net, args.time_hidden_dim))
     return ivp_solver
 
 
@@ -192,8 +192,8 @@ class GPTS(nn.Module):
         self.input_lyr = nn.Linear(
             args.variable_num * 2 + args.embed_time, args.n_embd)
         self.dropout = nn.Dropout(args.dropout)
-        self.multi_attn_lyrs = nn.ModuleList(
-            [Block(args) for _ in range(args.mhatt_n_layer)])
+        self.multi_attn_lyrs = nn.Sequential(
+            *[Block(args) for _ in range(args.mhatt_n_layer)])
         self.ln_f = LayerNorm(args.n_embd, bias=args.bias)
         self.lm_head = nn.Linear(args.n_embd, args.variable_num)
         self.time_embedding = TimeEmbedding(args)
@@ -237,26 +237,13 @@ class GPTS(nn.Module):
         x = torch.cat((data_in, mask_in, time_embed), dim=-1)
         x = self.input_lyr(x)
 
-        for block in self.multi_attn_lyrs:
-            x = block(x)
+        x = self.multi_attn_lyrs(x)
+
         x = self.ln_f(x)
 
         results["latent_states"] = x
 
         return results
-
-    def crop_block_size(self, block_size):
-        # model surgery to decrease the block size if necessary
-        # e.g. we may load the GPT2 pretrained model checkpoint (block size 1024)
-        # but want to use a smaller block size for some smaller, simpler model
-        assert block_size <= self.config.block_size
-        self.config.block_size = block_size
-        self.transformer.wpe.weight = nn.Parameter(
-            self.transformer.wpe.weight[:block_size])
-        for block in self.multi_attn_lyrs:
-            if hasattr(block.attn, 'bias'):
-                block.attn.bias = block.attn.bias[:,
-                                                  :, :block_size, :block_size]
 
     @classmethod
     def from_pretrained(cls, model_type, override_args=None):
@@ -409,9 +396,7 @@ class GPTS(nn.Module):
             time_embed = self.time_embedding(times_in.unsqueeze(-1))
             x = torch.cat((data_in, mask_in, time_embed), dim=-1)
             x = self.input_lyr(x)
-
-            for block in self.multi_attn_lyrs:
-                x = block(x)
+            x = self.multi_attn_lyrs(x)
             x = self.ln_f(x)
 
             results["latent_states"] = x
