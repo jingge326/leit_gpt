@@ -132,7 +132,7 @@ class GPTS_BiClass(GPTS):
         results["val_loss"] = results["ce_loss"]
         results["label_predictions"] = label_pred.detach()
 
-        loss = nll_loss + ce_loss * self.args.ratio_ce
+        loss = ce_loss + nll_loss * self.args.ratio_nll
         results["loss"] = torch.mean(loss)
 
         return results

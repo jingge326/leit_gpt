@@ -110,10 +110,12 @@
                 "240",
                 "--batch-size",
                 "64",
-                "--log-tool",
-                "logging",
+                "--patience",
+                "10",
+                "--ratio-nll",
+                "0.1",
                 "--test-info",
-                "test"
+                "last_none"
             ],
             "console": "integratedTerminal"
         },

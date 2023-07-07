@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser(
     description="Run all experiments within the Leit framework.")
 
 # Args for the training process
-parser.add_argument("--random-state", type=int, default=1, help="Random seed")
+parser.add_argument("--random-state", type=int, default=5, help="Random seed")
 parser.add_argument("--proj-path", type=str,
                     default=str(Path(__file__).parents[0]))
 parser.add_argument("--test-info", default="test")
@@ -121,7 +121,7 @@ parser.add_argument("--encoder-dim", type=int, default=20)
 parser.add_argument("--classifier-input", default="z0")
 parser.add_argument("--train-w-reconstr", action='store_false')
 parser.add_argument("--ratio-ce", type=float, default=1000)
-parser.add_argument("--ratio-nl", type=float, default=1)
+parser.add_argument("--ratio-nll", type=float, default=1)
 parser.add_argument("--ratio-ae", type=float, default=1)
 parser.add_argument("--ratio-zz", type=float, default=0)
 parser.add_argument("--prior-mu", type=float, default=0.0)
@@ -282,12 +282,12 @@ if __name__ == "__main__":
     else:
         raise ValueError("Unknown")
 
-    # try:
-    #     experiment.run()
-    #     experiment.finish()
-    # except Exception:
-    #     with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
-    #         print(traceback.format_exc(), file=fout)
+    try:
+        experiment.run()
+        experiment.finish()
+    except Exception:
+        with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
+            print(traceback.format_exc(), file=fout)
 
-    experiment.run()
-    experiment.finish()
+    # experiment.run()
+    # experiment.finish()

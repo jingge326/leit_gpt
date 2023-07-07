@@ -10,4 +10,6 @@ main="/home/xiao/project/leit_gpt/main.py"
 args="${args_in//=/ }"
 args="${args//;/ }"
 
+export WANDB_MODE=online
+
 ~/tools/miniconda3/envs/leit/bin/python $main $args
