@@ -268,6 +268,9 @@ parser.add_argument(
 parser.add_argument("--evolve_module", default="delta_t",
                     choices=["ivp", "delta_t"])
 
+parser.add_argument("--last_ivp", action='store_true')
+parser.add_argument("--use_auxiliary_loss", action='store_true')
+
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -282,12 +285,12 @@ if __name__ == "__main__":
     else:
         raise ValueError("Unknown")
 
-    try:
-        experiment.run()
-        experiment.finish()
-    except Exception:
-        with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
-            print(traceback.format_exc(), file=fout)
+    # try:
+    #     experiment.run()
+    #     experiment.finish()
+    # except Exception:
+    #     with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
+    #         print(traceback.format_exc(), file=fout)
 
-    # experiment.run()
-    # experiment.finish()
+    experiment.run()
+    experiment.finish()

@@ -115,7 +115,7 @@
                 "--ratio-nll",
                 "0.1",
                 "--test-info",
-                "last_none"
+                "no_aux"
             ],
             "console": "integratedTerminal"
         },
