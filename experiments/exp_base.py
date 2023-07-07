@@ -92,6 +92,7 @@ class BaseExperiment:
                 self.args.ml_task,
                 self.args.data,
                 self.args.leit_model,
+                self.args.model_type,
             ]
             if self.args.leit_model == "ivp_vae" or self.args.leit_model == "red_vae":
                 tags.append(self.args.ivp_solver)

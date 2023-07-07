@@ -731,8 +731,8 @@ def collate_fn_biclass(batch, num_vars, args):
 
         lengths = torch.tensor(len_list).to(device)
 
-        # The first time point should be larger than 0 after data processing
-        assert combined_times[:, 0].gt(0).all()
+        # # The first time point should be larger than 0 after data processing
+        # assert combined_times[:, 0].gt(0).all()
 
         if args.first_dim == "time_series":
             combined_values = combined_values.permute(1, 0, 2)

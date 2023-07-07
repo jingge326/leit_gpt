@@ -1,6 +1,7 @@
 import time
 import torch
 import torch.nn as nn
+from experiments.utils_mtan import compute_log_normal_pdf
 from models.att_ivpvae import AttIVPVAE
 from models.base_models.mtan_components import create_classifier
 from models.baselines.classic_rnn import ClassicRNN
@@ -93,6 +94,7 @@ class GPTS_BiClass(GPTS):
 
     def compute_prediction_results(self, batch):
         results = self.forward(batch)
+
         if self.args.gpts_output == "all":
             score = self.attn_inte_lyr(results["latent_states"])
             score = self.softmax_with_mask(score, batch['exist_times'], dim=1)
@@ -107,7 +109,22 @@ class GPTS_BiClass(GPTS):
         # squeeze to remove the time dimension
         label_pred = self.classifier(c_input)
 
+        times = batch['times_in']
+        delta_ts = times[:, 1:] - times[:, :-1]
+        latent_states = results["latent_states"][:, :-1, :]
+        B, T, C = latent_states.size()
+        latent_states = latent_states.view(
+            B, T, self.args.nhead, C // self.args.nhead).unsqueeze(-2)
+        delta_ts = delta_ts.view(B, T, 1, 1).repeat(1, 1, self.args.nhead, 1)
+        evolved_states = self.evolve(latent_states, delta_ts).view(B, T, C)
+        value_pred = self.lm_head(evolved_states)
+
         results['forward_time'] = time.time() - self.time_start
+
+        # Compute Negative log-likelihood loss
+        rec_likelihood = compute_log_normal_pdf(
+            batch['data_in'][:, 1:, :], batch['mask_in'][:, 1:, :], value_pred, self.args)
+        nll_loss = -rec_likelihood.mean()
 
         # Compute CE loss
         ce_loss = compute_binary_CE_loss(label_pred.squeeze(), batch['truth'])
@@ -115,7 +132,7 @@ class GPTS_BiClass(GPTS):
         results["val_loss"] = results["ce_loss"]
         results["label_predictions"] = label_pred.detach()
 
-        loss = ce_loss
+        loss = nll_loss + ce_loss * self.args.ratio_ce
         results["loss"] = torch.mean(loss)
 
         return results
