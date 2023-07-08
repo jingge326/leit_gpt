@@ -457,3 +457,42 @@ def log_lik_gaussian_simple(x, mu, logvar):
     https://github.com/edebrouwer/gru_ode_bayes
     """
     return np.log(np.sqrt(2 * np.pi)) + (logvar / 2) + ((x - mu).pow(2) / (2 * logvar.exp()))
+
+
+def subsample_timepoints(data, time_steps, mask, n_tp_to_sample=None):
+    # n_tp_to_sample: number of time points to subsample. If not None, sample exactly n_tp_to_sample points
+    if n_tp_to_sample is None:
+        return data, time_steps, mask
+    n_tp_in_batch = len(time_steps)
+
+    if n_tp_to_sample > 1:
+        # Subsample exact number of points
+        assert (n_tp_to_sample <= n_tp_in_batch)
+        n_tp_to_sample = int(n_tp_to_sample)
+
+        for i in range(data.size(0)):
+            missing_idx = sorted(np.random.choice(
+                np.arange(n_tp_in_batch), n_tp_in_batch - n_tp_to_sample, replace=False))
+
+            data[i, missing_idx] = 0.
+            if mask is not None:
+                mask[i, missing_idx] = 0.
+
+    elif (n_tp_to_sample <= 1) and (n_tp_to_sample > 0):
+        # Subsample percentage of points from each time series
+        percentage_tp_to_sample = n_tp_to_sample
+        for i in range(data.size(0)):
+            # take mask for current training sample and sum over all features -- figure out which time points don't have any measurements at all in this batch
+            current_mask = mask[i].sum(-1).cpu()
+            non_missing_tp = np.where(current_mask > 0)[0]
+            n_tp_current = len(non_missing_tp)
+            n_to_sample = int(n_tp_current * percentage_tp_to_sample)
+            subsampled_idx = sorted(np.random.choice(
+                non_missing_tp, n_to_sample, replace=False))
+            missing_idx = np.setdiff1d(non_missing_tp, subsampled_idx)
+
+            data[i, missing_idx] = 0.
+            if mask is not None:
+                mask[i, missing_idx] = 0.
+
+    return data, time_steps, mask, missing_idx

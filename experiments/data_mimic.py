@@ -978,8 +978,9 @@ def collate_fn_interp(batch, num_vars, args):
     combined_times = torch.from_numpy(np.stack([np.concatenate([times, np.zeros(
         max_len-len_t, dtype=np.float32)], 0) for times, len_t in zip(times_list, len_list)], 0,).astype(np.float32)).to(device)
 
+    missing_idx = None
     if args.sample_tp < 1:
-        subsampled_values, subsampled_times, subsampled_masks = utils.subsample_timepoints(
+        subsampled_values, subsampled_times, subsampled_masks, missing_idx = utils.subsample_timepoints(
             combined_values.clone(), combined_times.clone(), combined_masks.clone(), args.sample_tp)
     else:
         subsampled_values, subsampled_times, subsampled_masks = \
@@ -995,5 +996,6 @@ def collate_fn_interp(batch, num_vars, args):
     data_dict["times_out"] = combined_times
     data_dict["data_out"] = combined_values
     data_dict["mask_out"] = combined_masks
+    data_dict["missing_idx"] = missing_idx
 
     return data_dict
