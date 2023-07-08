@@ -114,8 +114,9 @@
                 "10",
                 "--ratio-nll",
                 "0.1",
+                "--use_auxiliary_loss",
                 "--test-info",
-                "no_aux"
+                "use_aux"
             ],
             "console": "integratedTerminal"
         },
