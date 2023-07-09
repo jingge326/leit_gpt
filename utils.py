@@ -459,6 +459,44 @@ def log_lik_gaussian_simple(x, mu, logvar):
     return np.log(np.sqrt(2 * np.pi)) + (logvar / 2) + ((x - mu).pow(2) / (2 * logvar.exp()))
 
 
+# sample some time points, and then split the data, mask and time_steps into two parts (observed and unobserved)
+def drop_times(data, times, mask, times_drop):
+    data_kept = []
+    times_kept = []
+    mask_kept = []
+    data_dropped = []
+    times_dropped = []
+    mask_dropped = []
+
+    for i in range(data.size(0)):
+        exist_times = np.where(mask[i].sum(-1).cpu() > 0)[0]
+        n_tp_exist = len(exist_times)
+        if times_drop > 1:
+            n_to_drop = int(times_drop)
+            if n_to_drop > n_tp_exist:
+                n_to_drop = n_tp_exist
+                Warning('n_to_drop is larger than n_tp_exist, set to n_tp_exist')
+
+        elif (times_drop <= 1) and (times_drop > 0):
+            n_to_drop = int(n_tp_exist * times_drop)
+
+        else:
+            raise ValueError('n_tp_to_sample must be positive')
+
+        idx_dropped = sorted(np.random.choice(
+            exist_times, times_drop, replace=False))
+        idx_kept = np.setdiff1d(exist_times, idx_dropped)
+
+        data_kept.append(data[i, idx_kept, :])
+        times_kept.append(times[i, idx_kept])
+        mask_kept.append(mask[i, idx_kept, :])
+        data_dropped.append(data[i, idx_dropped, :])
+        times_dropped.append(times[i, idx_dropped])
+        mask_dropped.append(mask[i, idx_dropped, :])
+
+    return data_kept, times_kept, mask_kept, data_dropped, times_dropped, mask_dropped
+
+
 def subsample_timepoints(data, time_steps, mask, n_tp_to_sample=None):
     # n_tp_to_sample: number of time points to subsample. If not None, sample exactly n_tp_to_sample points
     if n_tp_to_sample is None:

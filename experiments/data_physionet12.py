@@ -5,7 +5,7 @@ import shutil
 import numpy as np
 import pandas as pd
 from torchvision.datasets.utils import download_url
-from experiments.data_mimic import DatasetBiClass, DatasetExtrap, filter_tvt, scale_tvt
+from experiments.data_mimic import DatasetBiClass, DatasetExtrap, DatasetInterp, filter_tvt, scale_tvt
 
 
 def download_and_process_p12(path_p12):
@@ -158,6 +158,11 @@ def get_p12_tvt_datasets(args, proj_path, logger):
                             val_options, args.extrap_full, ts_full=args.ts_full)
         test = DatasetExtrap(data_test.reset_index(),
                              val_options, args.extrap_full, ts_full=args.ts_full)
+
+    elif args.ml_task == "interp":
+        train = DatasetInterp(data_train.reset_index())
+        val = DatasetInterp(data_validation.reset_index())
+        test = DatasetInterp(data_test.reset_index())
 
     else:
         raise ValueError("Unknown ML mode!")

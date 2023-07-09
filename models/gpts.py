@@ -231,7 +231,6 @@ class GPTS(nn.Module):
         times_in = batch['times_in']
         data_in = batch['data_in']
         mask_in = batch['mask_in']
-        t_exist = batch['exist_times']
         utils.check_mask(data_in, mask_in)
         time_embed = self.time_embedding(times_in.unsqueeze(-1))
         x = torch.cat((data_in, mask_in, time_embed), dim=-1)

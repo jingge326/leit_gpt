@@ -9,7 +9,7 @@ from models.baselines.mtan_ivp import MTANIVP
 from models.ivp_solvers import CouplingFlow, ODEModel, ResNetFlow, GRUFlow
 from models.base_models.ivpvae_components import Embedding_Linear, Embedding_MLP, Reconst_DM_Mapper_ReLU, BinaryClassifier, MLP_REGRE, Embedding_MLP, Reconst_Mapper_Linear, Reconst_Mapper_MLP
 from models.base_models.embedding import Embedding_GNN
-from models.models_interp import CRU_Interp, ClassicRNN_Interp, IVPVAE_Interp, MTAN_Interp, REDVAE_Interp
+from models.models_interp import CRU_Interp, ClassicRNN_Interp, GPTS_Interp, IVPVAE_Interp, MTAN_Interp, REDVAE_Interp
 from models.models_multiclass import CKCONV_MultiClass, ClassicRNN_MultiClass, IVPVAE_MultiClass, MTAN_MultiClass, MTANIVP_MultiClass, REDVAE_MultiClass, Raindrop_MultiClass
 from models.pl_wrapper import PL_Wrapper
 
@@ -471,6 +471,9 @@ class ModelFactory:
 
         elif self.args.leit_model == 'cru':
             return CRU_Interp(args=self.args)
+
+        elif self.args.leit_model == 'gpts':
+            return GPTS_Interp(args=self.args)
 
         else:
             raise ValueError('Wrong LEIT model!')

@@ -619,11 +619,10 @@ class DatasetExtrap(Dataset):
 
 
 class DatasetInterp(Dataset):
-    def __init__(self, in_df, label_df, ts_full=False):
+    def __init__(self, in_df):
 
         self.in_df = in_df
         adm_ids = self.in_df.loc[:, "ID"].unique()
-        self.label_df = label_df[label_df["ID"].isin(adm_ids)]
 
         # how many different ids are there
         self.length = len(adm_ids)
@@ -635,19 +634,14 @@ class DatasetInterp(Dataset):
         # Rename all the admission ids
         map_dict = dict(zip(adm_ids, np.arange(self.length)))
         self.in_df.loc[:, "ID"] = self.in_df.loc[:, "ID"].map(map_dict)
-        self.label_df.loc[:, "ID"] = self.label_df["ID"].map(
-            map_dict)
 
         # data processing
         self.in_df = self.in_df.astype(np.float32)
         self.in_df.ID = self.in_df.ID.astype(np.int)
-        self.label_df["labels"] = self.label_df["labels"].astype(np.float32)
-        if ts_full:
-            self.in_df.Time = self.in_df.Time.astype(int)
+
         # This step is important for the batch sampling on admission ids
         self.in_df.set_index("ID", inplace=True)
         self.in_df.sort_values("Time", inplace=True)
-        self.label_df.set_index("ID", inplace=True)
 
     def __len__(self):
         return self.length
@@ -658,8 +652,7 @@ class DatasetInterp(Dataset):
         # if len(samples.shape) == 1:
         #     samples = self.in_df.loc[[idx]]
         samples = self.in_df.loc[[idx]]
-        label = self.label_df.loc[idx].values
-        return {"idx": idx, "truth": label, "samples": samples}
+        return {"idx": idx, "samples": samples}
 
 
 def collate_fn_biclass(batch, num_vars, args):
@@ -950,52 +943,77 @@ def collate_fn_interp(batch, num_vars, args):
         value_cols.append(col.startswith("Value"))
         mask_cols.append(col.startswith("Mask"))
 
-    values_list = []
-    masks_list = []
-    times_list = []
-    len_list = []
+    kept_list_values = []
+    kept_list_masks = []
+    kept_list_times = []
+    kept_list_len = []
+    dropped_list_values = []
+    dropped_list_masks = []
+    dropped_list_times = []
+    dropped_list_len = []
+
     for b in batch:
-        values_list.append(b["samples"].loc[:, value_cols].values)
-        masks_list.append(b["samples"].loc[:, mask_cols].values)
-        ts = b["samples"]["Time"].values
-        times_list.append(ts)
-        len_list.append(len(ts))
+        samples = b["samples"].reset_index(drop=True)
+        n_tp_exist = samples.shape[0]
+        if args.times_drop > 1:
+            n_to_drop = int(args.times_drop)
+            if n_to_drop > n_tp_exist:
+                n_to_drop = n_tp_exist
+                Warning("times_drop is larger than the number of time points, set to {}".format(
+                    n_to_drop))
+        elif (args.times_drop <= 1) and (args.times_drop > 0):
+            n_to_drop = int(n_tp_exist * args.times_drop)
+        else:
+            raise ValueError("times_drop should be larger than 0")
+        samples_dropped = samples.sample(n=n_to_drop, axis=0)
+        samples_kept = samples.drop(samples_dropped.index, axis=0)
+        dropped_list_values.append(samples_dropped.loc[:, value_cols].values)
+        dropped_list_masks.append(samples_dropped.loc[:, mask_cols].values)
+        dropped_list_times.append(samples_dropped["Time"].values)
+        dropped_list_len.append(n_to_drop)
+        kept_list_values.append(samples_kept.loc[:, value_cols].values)
+        kept_list_masks.append(samples_kept.loc[:, mask_cols].values)
+        kept_list_times.append(samples_kept["Time"].values)
+        kept_list_len.append(n_tp_exist - n_to_drop)
 
-    if args.time_len_fixed == True:
-        max_len = args.num_times
-    else:
-        max_len = max(len_list)
+    max_len_kept = max(kept_list_len)
+    max_len_dropped = max(dropped_list_len)
 
     # shape = (batch_size, maximum sequence length, variables)
-    combined_values = torch.from_numpy(np.stack([np.concatenate([values, np.zeros(
-        (max_len-len_t, num_vars), dtype=np.float32)], 0) for values, len_t in zip(values_list, len_list)], 0,)).to(device)
+    data_in = torch.from_numpy(np.stack([np.concatenate([values, np.zeros(
+        (max_len_kept-len_t, num_vars), dtype=np.float32)], 0) for values, len_t in zip(kept_list_values, kept_list_len)], 0,)).to(device)
 
     # shape = (batch_size, maximum sequence length, variables)
-    combined_masks = torch.from_numpy(np.stack([np.concatenate([mask, np.zeros(
-        (max_len-len_t, num_vars), dtype=np.float32)], 0) for mask, len_t in zip(masks_list, len_list)], 0)).to(device)
+    mask_in = torch.from_numpy(np.stack([np.concatenate([mask, np.zeros(
+        (max_len_kept-len_t, num_vars), dtype=np.float32)], 0) for mask, len_t in zip(kept_list_masks, kept_list_len)], 0)).to(device)
 
     # shape = (batch_size, maximum sequence length)
-    combined_times = torch.from_numpy(np.stack([np.concatenate([times, np.zeros(
-        max_len-len_t, dtype=np.float32)], 0) for times, len_t in zip(times_list, len_list)], 0,).astype(np.float32)).to(device)
+    times_in = torch.from_numpy(np.stack([np.concatenate([times, np.zeros(
+        max_len_kept-len_t, dtype=np.float32)], 0) for times, len_t in zip(kept_list_times, kept_list_len)], 0,).astype(np.float32)).to(device)
 
-    missing_idx = None
-    if args.sample_tp < 1:
-        subsampled_values, subsampled_times, subsampled_masks, missing_idx = utils.subsample_timepoints(
-            combined_values.clone(), combined_times.clone(), combined_masks.clone(), args.sample_tp)
-    else:
-        subsampled_values, subsampled_times, subsampled_masks = \
-            combined_values, combined_times, combined_masks
+    # shape = (batch_size, maximum sequence length, variables)
+    data_out = torch.from_numpy(np.stack([np.concatenate([values, np.zeros(
+        (max_len_dropped-len_t, num_vars), dtype=np.float32)], 0) for values, len_t in zip(dropped_list_values, dropped_list_len)], 0,)).to(device)
 
-    # The first time point should be larger than 0 after data processing
-    assert combined_times[:, 0].gt(0).all()
+    # shape = (batch_size, maximum sequence length, variables)
+    mask_out = torch.from_numpy(np.stack([np.concatenate([mask, np.zeros(
+        (max_len_dropped-len_t, num_vars), dtype=np.float32)], 0) for mask, len_t in zip(dropped_list_masks, dropped_list_len)], 0)).to(device)
+
+    # shape = (batch_size, maximum sequence length)
+    times_out = torch.from_numpy(np.stack([np.concatenate([times, np.zeros(
+        max_len_dropped-len_t, dtype=np.float32)], 0) for times, len_t in zip(dropped_list_times, dropped_list_len)], 0,).astype(np.float32)).to(device)
+
+    exist_times_in = mask_in.sum(dim=-1).gt(0)
+    exist_times_out = mask_out.sum(dim=-1).gt(0)
 
     data_dict = {}
-    data_dict["times_in"] = subsampled_times
-    data_dict["data_in"] = subsampled_values
-    data_dict["mask_in"] = subsampled_masks
-    data_dict["times_out"] = combined_times
-    data_dict["data_out"] = combined_values
-    data_dict["mask_out"] = combined_masks
-    data_dict["missing_idx"] = missing_idx
+    data_dict["times_in"] = times_in
+    data_dict["data_in"] = data_in
+    data_dict["mask_in"] = mask_in
+    data_dict["exist_times_in"] = exist_times_in
+    data_dict["times_out"] = times_out
+    data_dict["data_out"] = data_out
+    data_dict["mask_out"] = mask_out
+    data_dict["exist_times_out"] = exist_times_out
 
     return data_dict

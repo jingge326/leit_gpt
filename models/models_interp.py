@@ -19,52 +19,28 @@ class GPTS_Interp(GPTS):
 
     def compute_prediction_results(self, batch):
         results = self.forward(batch)
+        data_out = batch['data_out']
+        mask_out = batch['mask_out']
         times_out = batch['times_out']
-        mask_gen = torch.ones_like(batch['mask_out'])
+        times_in = batch['times_in']
+        exist_times_in = batch["exist_times_in"]
+        delta_ts = times_out.unsqueeze(-2) - times_in.unsqueeze(-1)
 
-        exist_edge = torch.logical_xor(torch.concat([batch['exist_times'][:, 1:], torch.zeros(
-            batch['exist_times'].shape[0], 1).to(batch["data_in"])], dim=-1), batch['exist_times'])
+        latent_states = results["latent_states"].unsqueeze(-2)
 
-        self.zero_delta_t = self.zero_tensor.repeat(
-            batch['times_in'].size(0), 1)
-        delta_ts = batch['times_in'][:, 1:] - batch['times_in'][:, :-1]
-        delta_ts = torch.cat((delta_ts, self.zero_delta_t), dim=1)
-        ts_new = exist_edge * batch["times_out"][:, [0]]
-        delta_ts = delta_ts + ts_new
-
-        # evolved_states = self.evolve(results["latent_states"], delta_ts)
-
-        latent_states = results["latent_states"]
-        B, T, C = latent_states.size()
+        B, ST, _, C = latent_states.size()
+        TT = delta_ts.size(-1)
         latent_states = latent_states.view(
-            B, T, self.args.nhead, C // self.args.nhead).unsqueeze(-2)
-        delta_ts = delta_ts.view(B, T, 1, 1).repeat(1, 1, self.args.nhead, 1)
+            B, ST, 1, self.args.nhead, C // self.args.nhead).permute(0, 1, 3, 2, 4)
 
-        evolved_states = self.evolve(latent_states, delta_ts).view(B, T, C)
+        evolved_states = self.evolve(
+            latent_states, delta_ts.unsqueeze(-2).repeat(1, 1, self.args.nhead, 1)).view(B, ST, TT, C)
 
-        pred_x = torch.zeros_like(batch['data_out'])
+        exist_times_in = exist_times_in.view(B, ST, 1, 1)
+        evolved_states = (
+            evolved_states * exist_times_in).sum(dim=1)/exist_times_in.sum(dim=1)
 
-        pred_x[:, 0, :] = (self.lm_head(evolved_states) *
-                           exist_edge.unsqueeze(-1)).sum(dim=-2)
-
-        for i in range(times_out.size(-1) - 1):
-            delta_ts = times_out[:, 1:i+2] - times_out[:, :i+1]
-            time_embed = self.time_embedding(times_out[:, :i+1].unsqueeze(-1))
-            x = torch.cat(
-                (pred_x[:, :i+1, :], mask_gen[:, :i+1, :], time_embed), dim=-1)
-            x = self.input_lyr(x)
-            x = self.multi_attn_lyrs(x)
-            x = self.ln_f(x)
-
-            B, T, C = x.size()
-            x = x.view(B, T, self.args.nhead, C //
-                       self.args.nhead).unsqueeze(-2)
-            delta_ts = delta_ts.view(B, T, 1, 1).repeat(
-                1, 1, self.args.nhead, 1)
-
-            x = self.evolve(x, delta_ts).view(B, T, C)
-
-            pred_x[:, i+1, :] = self.lm_head(x)[:, -1, :]
+        pred_x = self.lm_head(evolved_states)
 
         rec_likelihood = compute_log_normal_pdf(
             batch['data_out'], batch['mask_out'], pred_x, self.args)

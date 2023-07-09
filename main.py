@@ -82,6 +82,7 @@ parser.add_argument("--next-start", type=float, default=1440)
 parser.add_argument("--next-end", type=float, default=2880)
 parser.add_argument("--next-headn", type=int, default=0)
 parser.add_argument('--sample-tp', type=float, default=1.0)
+parser.add_argument('--times-drop', type=float, default=0.0)
 parser.add_argument('--mask-drop-rate', type=float, default=0.0)
 
 # Args for IVP solvers
@@ -285,12 +286,12 @@ if __name__ == "__main__":
     else:
         raise ValueError("Unknown")
 
-    try:
-        experiment.run()
-        experiment.finish()
-    except Exception:
-        with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
-            print(traceback.format_exc(), file=fout)
+    # try:
+    #     experiment.run()
+    #     experiment.finish()
+    # except Exception:
+    #     with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
+    #         print(traceback.format_exc(), file=fout)
 
-    # experiment.run()
-    # experiment.finish()
+    experiment.run()
+    experiment.finish()
