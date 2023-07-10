@@ -215,6 +215,7 @@ class BaseExperiment:
         total['std_first_p'] = 0
         total['ce_loss'] = 0
         total['mse_reg'] = 0
+        total["mse_interp"] = 0
         total['mae_reg'] = 0
         total['mse_extrap'] = 0
         total['forward_time'] = 0

@@ -1,3 +1,4 @@
+import time
 import torch
 from experiments.utils_metrics import masked_gaussian_log_density
 from experiments.utils_mtan import compute_log_normal_pdf, mean_squared_error
@@ -44,7 +45,7 @@ class GPTS_Interp(GPTS):
             batch['data_out'], batch['mask_out'], pred_x, self.args)
         results["loss"] = -rec_likelihood.mean()
 
-        results["mse"] = mean_squared_error(
+        results["mse_interp"] = mean_squared_error(
             batch['data_out'], pred_x, mask=batch['mask_out']).detach()
 
         # detect if results["loss"] is nan
@@ -94,7 +95,32 @@ class REDVAE_Interp(REDVAE):
 
     def compute_prediction_results(self, batch, k_iwae=1):
 
-        results, _ = self.forward(batch, k_iwae)
+        results, forward_info = self.forward(batch, k_iwae)
+        initial_state = forward_info['initial_state']
+        sol_z = self.diffeq_solver(
+            initial_state, batch["times_out"].unsqueeze(0))
+        pred_x = self.decoder(sol_z)
+
+        # Reconstruction/Modeling Loss
+        data_out = batch["data_out"].repeat(pred_x.size(0), 1, 1, 1)
+        mask_out = batch["mask_out"].repeat(pred_x.size(0), 1, 1, 1)
+
+        if self.args.fast_llloss == True:
+            rec_likelihood = compute_log_normal_pdf(
+                data_out, mask_out, pred_x, self.args)
+        else:
+            rec_likelihood = masked_gaussian_log_density(
+                pred_x, data_out, obsrv_std=self.obsrv_std, mask=mask_out)
+
+        # sum out the traj dim
+        loss_interp = -torch.logsumexp(rec_likelihood, 0)
+        # mean over the batch
+        loss_interp = torch.mean(loss_interp, dim=0)
+
+        mse_interp = mean_squared_error(data_out, pred_x, mask=mask_out)
+        results['mse_interp'] = torch.mean(mse_interp).detach()
+        results['loss'] = results['loss'] + loss_interp
+
         return results
 
     def run_validation(self, batch):
