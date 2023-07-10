@@ -801,9 +801,6 @@ def collate_fn_gpts(batch, num_vars, args):
         combined_masks = combined_masks.permute(1, 0, 2)
         combined_times = combined_times.permute(1, 0)
 
-    if combined_masks.shape[1] < args.seq_len_max:
-        print("Sequence length is smaller than the maximum sequence length.")
-
     data_dict = {
         "times_in": combined_times,
         "data_in": combined_values,
