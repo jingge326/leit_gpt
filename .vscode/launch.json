@@ -334,7 +334,7 @@
                 "--evolve_module",
                 "ivp",
                 "--batch-size",
-                "50",
+                "32",
                 "--log-tool",
                 "logging",
                 "--device",
