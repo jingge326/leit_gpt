@@ -7,10 +7,10 @@ if __name__ == "__main__":
 
     list_exp = []
     list_exp.extend(
-        ["P12-Interp-Flow"])
+        ["M4-PreTrain-BERT-IVP"])
 
     seeds_start = 1
-    seeds_stop = 5
+    seeds_stop = 1
 
     dr_list = []
 

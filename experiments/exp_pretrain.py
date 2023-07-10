@@ -12,9 +12,9 @@ import wandb
 from argparse import Namespace
 from torch.utils.data import DataLoader
 
-from experiments.data_mimic import MIMICDatasetGP, collate_fn_gpts, load_tvt
+from experiments.data_mimic import MIMICDatasetGP, collate_fn_bert, collate_fn_gpts, load_tvt
 from models.model_factory import ModelFactory
-from models.models_pretrain import GPTS_PreTrain
+from models.models_pretrain import BERT_PreTrain, GPTS_PreTrain
 from utils import record_experiment
 
 
@@ -25,7 +25,7 @@ class Exp_Pretrain:
         self.epochs_max = args.epochs_max
         self.patience = args.patience
         self.proj_path = Path(args.proj_path)
-        self.tags = ["gpts",
+        self.tags = [self.args.train_obj,
                      self.args.ml_task,
                      self.args.model_type,
                      "nhead"+str(self.args.nhead),
@@ -47,7 +47,10 @@ class Exp_Pretrain:
 
         self.dltrain, self.dlval = self.get_data()
 
-        self.model = GPTS_PreTrain(args=self.args).to(self.device)
+        if self.args.train_obj == "gpt":
+            self.model = GPTS_PreTrain(args=self.args).to(self.device)
+        else:
+            self.model = BERT_PreTrain(args=self.args).to(self.device)
 
         if self.args.model_type == "reconstruct":
             self.model = self.mf.reconstruct_models(
@@ -94,15 +97,22 @@ class Exp_Pretrain:
         val_dataset = MIMICDatasetGP(
             data_validation, data_path=m4_path/"split")
 
+        if self.args.train_obj == "gpt":
+            collate_fn_pretrain = collate_fn_gpts
+        elif self.args.train_obj == "bert":
+            collate_fn_pretrain = collate_fn_bert
+        else:
+            raise NotImplementedError
+
         dl_train = DataLoader(
             dataset=train_dataset,
-            collate_fn=lambda batch: collate_fn_gpts(
+            collate_fn=lambda batch: collate_fn_pretrain(
                 batch, self.args.variable_num, self.args),
             shuffle=True,
             batch_size=self.args.batch_size)
         dl_val = DataLoader(
             dataset=val_dataset,
-            collate_fn=lambda batch: collate_fn_gpts(
+            collate_fn=lambda batch: collate_fn_pretrain(
                 batch, self.args.variable_num, self.args),
             shuffle=True,
             batch_size=self.args.batch_size)

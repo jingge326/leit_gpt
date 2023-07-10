@@ -83,6 +83,37 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "M4-PreTrain-BERT-IVP",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": [
+                "--train_obj",
+                "bert",
+                "--evolve_module",
+                "ivp",
+                "--mhatt_n_layer",
+                "4",
+                "--n_embd",
+                "240",
+                "--batch-size",
+                "32",
+                "--patience",
+                "20",
+                "--seq_len_min",
+                "6",
+                "--times-drop",
+                "0.15",
+                "--log-tool",
+                "logging",
+                "--device",
+                "cuda:1",
+                "--test-info",
+                "min7"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
             "name": "P12-BiClass-GPTS",
             "type": "python",
             "request": "launch",

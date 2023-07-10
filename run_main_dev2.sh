@@ -1,6 +1,6 @@
 #!/bin/bash
 
-args_in="--random-state=1;--evolve_module=ivp;--data=p12;--variable-num=41;--num-times=2881;--time-max=2880;--time-scale=none;--ml-task=extrap;--model-type=initialize;--mhatt_n_layer=4;--n_embd=240;--next-headn=10;--patience=10;--log-tool=logging;--device=cuda:1;--test-info=test"
+args_in="--random-state=1;--train_obj=bert;--evolve_module=ivp;--mhatt_n_layer=4;--n_embd=240;--batch-size=32;--patience=20;--seq_len_min=6;--times-drop=0.15;--log-tool=logging;--device=cuda:1;--test-info=min7"
 
 main="/home/xiao/project/leit_gpt/main.py"
 

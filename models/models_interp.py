@@ -20,6 +20,7 @@ class GPTS_Interp(GPTS):
 
     def compute_prediction_results(self, batch):
         results = self.forward(batch)
+
         times_out = batch['times_out']
         times_in = batch['times_in']
         exist_times_in = batch["exist_times_in"]

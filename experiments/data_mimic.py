@@ -812,6 +812,97 @@ def collate_fn_gpts(batch, num_vars, args):
     return data_dict
 
 
+def collate_fn_bert(batch, num_vars, args):
+
+    value_cols = []
+    mask_cols = []
+    for col in batch[0]["samples"].columns:
+        value_cols.append(col.startswith("Value"))
+        mask_cols.append(col.startswith("Mask"))
+
+    kept_list_values = []
+    kept_list_masks = []
+    kept_list_times = []
+    kept_list_len = []
+    dropped_list_values = []
+    dropped_list_masks = []
+    dropped_list_times = []
+    dropped_list_len = []
+    for b in batch:
+        n_tp_exist = b["samples"].shape[0]
+        rows_random_max = n_tp_exist - args.seq_len_min
+        idx_start = np.random.randint(0, rows_random_max)
+        idx_end = min(idx_start + args.seq_len_max, n_tp_exist)
+        b_sub = b["samples"].iloc[idx_start:idx_end, :]
+
+        samples = b_sub.reset_index(drop=True)
+        n_tp_exist = samples.shape[0]
+        if args.times_drop > 1:
+            n_to_drop = int(args.times_drop)
+            if n_to_drop > n_tp_exist:
+                n_to_drop = n_tp_exist
+                Warning("times_drop is larger than the number of time points, set to {}".format(
+                    n_to_drop))
+        elif (args.times_drop <= 1) and (args.times_drop > 0):
+            n_to_drop = int(n_tp_exist * args.times_drop)
+        else:
+            raise ValueError("times_drop should be larger than 0")
+        samples_dropped = samples.sample(n=n_to_drop, axis=0)
+        samples_kept = samples.drop(samples_dropped.index, axis=0)
+        dropped_list_values.append(samples_dropped.loc[:, value_cols].values)
+        dropped_list_masks.append(samples_dropped.loc[:, mask_cols].values)
+        dropped_list_times.append(samples_dropped["Time"].values)
+        dropped_list_len.append(n_to_drop)
+        kept_list_values.append(samples_kept.loc[:, value_cols].values)
+        kept_list_masks.append(samples_kept.loc[:, mask_cols].values)
+        kept_list_times.append(samples_kept["Time"].values)
+        kept_list_len.append(n_tp_exist - n_to_drop)
+        assert (dropped_list_masks[-1].sum() >
+                0) and (kept_list_masks[-1].sum() > 0)
+
+    max_len_kept = max(kept_list_len)
+    max_len_dropped = max(dropped_list_len)
+
+    device = args.device
+    # shape = (batch_size, maximum sequence length, variables)
+    data_in = torch.from_numpy(np.stack([np.concatenate([values, np.zeros(
+        (max_len_kept-len_t, num_vars), dtype=np.float32)], 0) for values, len_t in zip(kept_list_values, kept_list_len)], 0,)).to(device)
+
+    # shape = (batch_size, maximum sequence length, variables)
+    mask_in = torch.from_numpy(np.stack([np.concatenate([mask, np.zeros(
+        (max_len_kept-len_t, num_vars), dtype=np.float32)], 0) for mask, len_t in zip(kept_list_masks, kept_list_len)], 0)).to(device)
+
+    # shape = (batch_size, maximum sequence length)
+    times_in = torch.from_numpy(np.stack([np.concatenate([times, np.zeros(
+        max_len_kept-len_t, dtype=np.float32)], 0) for times, len_t in zip(kept_list_times, kept_list_len)], 0,).astype(np.float32)).to(device)
+
+    # shape = (batch_size, maximum sequence length, variables)
+    data_out = torch.from_numpy(np.stack([np.concatenate([values, np.zeros(
+        (max_len_dropped-len_t, num_vars), dtype=np.float32)], 0) for values, len_t in zip(dropped_list_values, dropped_list_len)], 0,)).to(device)
+
+    # shape = (batch_size, maximum sequence length, variables)
+    mask_out = torch.from_numpy(np.stack([np.concatenate([mask, np.zeros(
+        (max_len_dropped-len_t, num_vars), dtype=np.float32)], 0) for mask, len_t in zip(dropped_list_masks, dropped_list_len)], 0)).to(device)
+
+    # shape = (batch_size, maximum sequence length)
+    times_out = torch.from_numpy(np.stack([np.concatenate([times, np.zeros(
+        max_len_dropped-len_t, dtype=np.float32)], 0) for times, len_t in zip(dropped_list_times, dropped_list_len)], 0,).astype(np.float32)).to(device)
+
+    exist_times_in = mask_in.sum(dim=-1).gt(0)
+    exist_times_out = mask_out.sum(dim=-1).gt(0)
+
+    data_dict = {}
+    data_dict["times_in"] = times_in
+    data_dict["data_in"] = data_in
+    data_dict["mask_in"] = mask_in
+    data_dict["exist_times_in"] = exist_times_in
+    data_dict["times_out"] = times_out
+    data_dict["data_out"] = data_out
+    data_dict["mask_out"] = mask_out
+    data_dict["exist_times_out"] = exist_times_out
+    return data_dict
+
+
 def collate_fn_extrap(batch, num_vars, args):
     if hasattr(args, "device"):
         device = args.device

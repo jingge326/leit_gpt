@@ -40,3 +40,47 @@ class GPTS_PreTrain(GPTS):
 
     def run_validation(self, batch):
         return self.compute_prediction_results(batch)
+
+
+class BERT_PreTrain(GPTS):
+    def __init__(self, args):
+        super().__init__(args)
+
+    def compute_prediction_results(self, batch):
+        results = self.forward(batch)
+
+        times_out = batch['times_out']
+        times_in = batch['times_in']
+        exist_times_in = batch["exist_times_in"]
+        delta_ts = times_out.unsqueeze(-2) - times_in.unsqueeze(-1)
+
+        latent_states = results["latent_states"].unsqueeze(-2)
+
+        B, ST, _, C = latent_states.size()
+        TT = delta_ts.size(-1)
+        latent_states = latent_states.view(
+            B, ST, 1, self.args.nhead, C // self.args.nhead).permute(0, 1, 3, 2, 4)
+
+        evolved_states = self.evolve(
+            latent_states, delta_ts.unsqueeze(-2).repeat(1, 1, self.args.nhead, 1)).view(B, ST, TT, C)
+
+        exist_times_in = exist_times_in.view(B, ST, 1, 1)
+        evolved_states = (
+            evolved_states * exist_times_in).sum(dim=1)/exist_times_in.sum(dim=1)
+
+        pred_x = self.lm_head(evolved_states)
+
+        rec_likelihood = compute_log_normal_pdf(
+            batch['data_out'], batch['mask_out'], pred_x, self.args)
+        results["loss"] = -rec_likelihood.mean()
+
+        results["mse_interp"] = mean_squared_error(
+            batch['data_out'], pred_x, mask=batch['mask_out']).detach()
+
+        # detect if results["loss"] is nan
+        assert results["loss"].isnan() == False
+
+        return results
+
+    def run_validation(self, batch):
+        return self.compute_prediction_results(batch)
