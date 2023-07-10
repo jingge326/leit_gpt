@@ -37,7 +37,13 @@ def filter_tvt(df_all, logger, args):
                            > args.next_start].index.unique()
     ids_selected = set(ids_before) & set(ids_after)
     df_all = df_all.loc[list(ids_selected)]
-    logger.info("Number of samples: {}".format(len(ids_selected)))
+    # drop admissions which have less than 10 time steps
+    if args.del_bad_p12 == True:
+        ids_good = df_all.groupby("ID").count().loc[df_all.groupby("ID").count(
+        )["Time"] >= 10].index
+        df_all = df_all.loc[df_all.index.isin(ids_good)]
+
+    logger.info("Number of samples: {}".format(len(ids_good)))
 
     if args.time_max < df_all['Time'].max():
         df_all = df_all.loc[df_all['Time'] <= args.time_max]
@@ -975,6 +981,8 @@ def collate_fn_interp(batch, num_vars, args):
         kept_list_masks.append(samples_kept.loc[:, mask_cols].values)
         kept_list_times.append(samples_kept["Time"].values)
         kept_list_len.append(n_tp_exist - n_to_drop)
+        assert (dropped_list_masks[-1].sum() >
+                0) and (kept_list_masks[-1].sum() > 0)
 
     max_len_kept = max(kept_list_len)
     max_len_dropped = max(dropped_list_len)

@@ -271,6 +271,7 @@ parser.add_argument("--evolve_module", default="delta_t",
 
 parser.add_argument("--last_ivp", action='store_true')
 parser.add_argument("--use_auxiliary_loss", action='store_true')
+parser.add_argument("--del_bad_p12", action='store_true')
 
 
 if __name__ == "__main__":

@@ -19,8 +19,6 @@ class GPTS_Interp(GPTS):
 
     def compute_prediction_results(self, batch):
         results = self.forward(batch)
-        data_out = batch['data_out']
-        mask_out = batch['mask_out']
         times_out = batch['times_out']
         times_in = batch['times_in']
         exist_times_in = batch["exist_times_in"]
@@ -48,6 +46,9 @@ class GPTS_Interp(GPTS):
 
         results["mse"] = mean_squared_error(
             batch['data_out'], pred_x, mask=batch['mask_out']).detach()
+
+        # detect if results["loss"] is nan
+        assert results["loss"].isnan() == False
 
         return results
 

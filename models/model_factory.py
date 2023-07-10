@@ -134,6 +134,7 @@ class ModelFactory:
         self.logger.info("Unexpected keys:")
         for key in keys_bad.unexpected_keys:
             self.logger.info(key)
+        self.logger.info("")
 
         return model
 
