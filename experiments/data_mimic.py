@@ -477,9 +477,10 @@ class MIMICDatasetPretrain(Dataset):
 
 
 class MIMICDatasetGP(Dataset):
-    def __init__(self, ids, data_path):
+    def __init__(self, ids, data_path, args):
         self.ids = ids
         self.data_path = data_path
+        self.args = args
         # how many different ids are there
         self.length = len(self.ids)
         # Rename all the admission ids
@@ -493,6 +494,8 @@ class MIMICDatasetGP(Dataset):
         adm_id = self.map_dict[idx]
         samples = pd.read_csv(
             self.data_path/(str(adm_id)+".csv"), dtype=np.float32)
+        if (self.args.add_cls == True) & (self.args.t_offset > 0):
+            samples["Time"] = samples["Time"] + self.args.t_offset
         assert len(samples.shape) == 2
         return {"idx": idx, "samples": samples}
 
@@ -820,6 +823,12 @@ def collate_fn_bert(batch, num_vars, args):
         value_cols.append(col.startswith("Value"))
         mask_cols.append(col.startswith("Mask"))
 
+    if args.add_cls == True:
+        # Create a dataframe with one row of ones at the beginning each sample
+        df_one = pd.DataFrame(np.ones(
+            (1, len(batch[0]["samples"].columns)), dtype="float32"), columns=batch[0]["samples"].columns)
+        df_one["Time"] = 0
+
     kept_list_values = []
     kept_list_masks = []
     kept_list_times = []
@@ -849,6 +858,9 @@ def collate_fn_bert(batch, num_vars, args):
             raise ValueError("times_drop should be larger than 0")
         samples_dropped = samples.sample(n=n_to_drop, axis=0)
         samples_kept = samples.drop(samples_dropped.index, axis=0)
+        if args.add_cls == True:
+            samples_kept = pd.concat([df_one, samples_kept], axis=0)
+
         dropped_list_values.append(samples_dropped.loc[:, value_cols].values)
         dropped_list_masks.append(samples_dropped.loc[:, mask_cols].values)
         dropped_list_times.append(samples_dropped["Time"].values)

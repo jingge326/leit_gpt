@@ -76,6 +76,7 @@ class BERT_PreTrain(GPTS):
 
         results["mse_interp"] = mean_squared_error(
             batch['data_out'], pred_x, mask=batch['mask_out']).detach()
+        results["mse"] = results["mse_interp"]
 
         # detect if results["loss"] is nan
         assert results["loss"].isnan() == False

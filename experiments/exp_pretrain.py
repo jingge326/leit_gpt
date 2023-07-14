@@ -93,9 +93,10 @@ class Exp_Pretrain:
         data_train, data_validation, _ = load_tvt(
             self.args, m4_path, self.logger)
 
-        train_dataset = MIMICDatasetGP(data_train, data_path=m4_path/"split")
+        train_dataset = MIMICDatasetGP(
+            data_train, data_path=m4_path/"split", args=self.args)
         val_dataset = MIMICDatasetGP(
-            data_validation, data_path=m4_path/"split")
+            data_validation, data_path=m4_path/"split", args=self.args)
 
         if self.args.train_obj == "gpt":
             collate_fn_pretrain = collate_fn_gpts
