@@ -154,6 +154,87 @@ class GPTS_BiClass(GPTS):
         return self.compute_prediction_results(batch)
 
 
+class BERT_BiClass(GPTS):
+    def __init__(self, args):
+        super().__init__(args)
+        # Classification
+        self.args = args
+        if self.args.gpts_output == "all":
+            self.attn_inte_lyr = nn.Sequential(
+                nn.Linear(args.n_embd, 1),
+                nn.ReLU())
+            self.dropout = nn.Dropout(args.dropout)
+        self.classifier = BinaryClassifier(self.args.n_embd)
+
+    def softmax_with_mask(self, input, mask, dim):
+        if len(mask.shape) == 2:
+            mask = mask.unsqueeze(-1)
+        output = torch.exp(input) * mask
+        output = output / torch.sum(output, dim=dim, keepdim=True)
+        return output
+
+    def compute_prediction_results(self, batch):
+        results = self.forward(batch)
+        latent_states = results["latent_states"]
+        times = batch['times_in']
+
+        delta_ts = times[:, 1:] - times[:, :-1]
+        delta_ts = torch.cat(
+            (delta_ts, self.zero_tensor.repeat(times.size(0), 1)), dim=1)
+
+        B, T, C = latent_states.size()
+        latent_states = latent_states.view(
+            B, T, self.args.nhead, C // self.args.nhead).unsqueeze(-2)
+        delta_ts = delta_ts.view(B, T, 1, 1).repeat(1, 1, self.args.nhead, 1)
+        latent_states_updated = self.evolve(
+            latent_states, delta_ts).view(B, T, C)
+        value_pred = self.lm_head(latent_states_updated)
+
+        if self.args.last_ivp == True:
+            latent_states = latent_states_updated
+        else:
+            latent_states = latent_states.view(B, T, C)
+
+        if self.args.gpts_output == "all":
+            score = self.attn_inte_lyr(latent_states)
+            score = self.softmax_with_mask(score, batch['exist_times'], dim=1)
+            score = self.dropout(score)
+            c_input = torch.sum(score * latent_states, dim=-2)
+        else:
+            exist_edge = torch.logical_xor(torch.concat([batch['exist_times'][:, 1:], torch.zeros(
+                batch['exist_times'].shape[0], 1).to(batch["data_in"])], dim=-1), batch['exist_times'])
+            c_input = (latent_states *
+                       exist_edge.unsqueeze(-1)).sum(dim=-2)
+
+        # squeeze to remove the time dimension
+        label_pred = self.classifier(c_input)
+
+        results['forward_time'] = time.time() - self.time_start
+
+        # Compute Negative log-likelihood loss
+        rec_likelihood = compute_log_normal_pdf(
+            batch['data_in'][:, 1:, :], batch['mask_in'][:, 1:, :], value_pred[:, :-1, :], self.args)
+        nll_loss = -rec_likelihood.mean()
+
+        # Compute CE loss
+        ce_loss = compute_binary_CE_loss(label_pred.squeeze(), batch['truth'])
+        results["ce_loss"] = torch.mean(ce_loss).detach()
+        results["val_loss"] = results["ce_loss"]
+        results["label_predictions"] = label_pred.detach()
+
+        if self.args.use_auxiliary_loss == True:
+            loss = ce_loss + nll_loss * self.args.ratio_nll
+        else:
+            loss = ce_loss
+
+        results["loss"] = torch.mean(loss)
+
+        return results
+
+    def run_validation(self, batch):
+        return self.compute_prediction_results(batch)
+
+
 class IVPVAE_OLD_BiClass(IVPVAE_OLD):
     def __init__(
             self,
