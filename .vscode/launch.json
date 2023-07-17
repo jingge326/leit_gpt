@@ -133,7 +133,7 @@
                 "--n_embd",
                 "240",
                 "--batch-size",
-                "8",
+                "32",
                 "--patience",
                 "20",
                 "--seq_len_min",
@@ -142,12 +142,10 @@
                 "200",
                 "--times-drop",
                 "0.15",
-                "--log-tool",
-                "logging",
                 "--device",
-                "cuda:0",
+                "cuda:1",
                 "--test-info",
-                "testing"
+                "cls"
             ],
             "console": "integratedTerminal"
         },

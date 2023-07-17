@@ -1,6 +1,7 @@
 import time
 import torch
 import torch.nn as nn
+from models.bert import BERT
 from models.gpts import GPTS
 
 from experiments.utils_mtan import compute_log_normal_pdf, mean_squared_error
@@ -42,7 +43,7 @@ class GPTS_PreTrain(GPTS):
         return self.compute_prediction_results(batch)
 
 
-class BERT_PreTrain(GPTS):
+class BERT_PreTrain(BERT):
     def __init__(self, args):
         super().__init__(args)
 
