@@ -97,7 +97,7 @@
                 "--n_embd",
                 "240",
                 "--batch-size",
-                "32",
+                "8",
                 "--patience",
                 "20",
                 "--seq_len_min",
@@ -111,7 +111,7 @@
                 "--device",
                 "cuda:1",
                 "--test-info",
-                "min7"
+                "testing"
             ],
             "console": "integratedTerminal"
         },
@@ -133,7 +133,7 @@
                 "--n_embd",
                 "240",
                 "--batch-size",
-                "32",
+                "8",
                 "--patience",
                 "20",
                 "--seq_len_min",
@@ -145,7 +145,41 @@
                 "--device",
                 "cuda:1",
                 "--test-info",
-                "cls"
+                "testing"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "M4-PreTrain-BERT-CLS-PL",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": [
+                "--train_obj",
+                "bert",
+                "--ml-task",
+                "pl_pretrain",
+                "--add_cls",
+                "--t-offset",
+                "1.0",
+                "--evolve_module",
+                "ivp",
+                "--mhatt_n_layer",
+                "4",
+                "--n_embd",
+                "240",
+                "--batch-size",
+                "8",
+                "--patience",
+                "20",
+                "--seq_len_min",
+                "6",
+                "--seq_len_max",
+                "200",
+                "--times-drop",
+                "0.15",
+                "--test-info",
+                "testing"
             ],
             "console": "integratedTerminal"
         },

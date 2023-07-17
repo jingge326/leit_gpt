@@ -362,6 +362,52 @@ class PretrainDataModule(pl.LightningDataModule):
             num_workers=self.num_dl_workers)
 
 
+class M4PretrainDataModule(pl.LightningDataModule):
+    def __init__(self, args, proj_path, logger):
+        super().__init__()
+        self.args = args
+        m4_path = proj_path/"data/mimic4/processed/"
+        data_train, data_validation, _ = load_tvt(
+            self.args, m4_path, logger)
+
+        self.train_dataset = MIMICDatasetGP(
+            data_train, data_path=m4_path/"split", args=self.args)
+        self.val_dataset = MIMICDatasetGP(
+            data_validation, data_path=m4_path/"split", args=self.args)
+
+        if self.args.train_obj == "gpt":
+            self.collate_fn_pretrain = collate_fn_gpts
+        elif self.args.train_obj == "bert":
+            self.collate_fn_pretrain = collate_fn_bert
+        else:
+            raise NotImplementedError
+
+    # def setup(self, stage):
+    #     train_idx, val_idx = train_test_split(
+    #         self.full_data.index.unique(), test_size=0.2, random_state=0)
+    #     self.train_dataset = MIMICDatasetPretrain(
+    #         in_df=self.full_data.loc[train_idx].reset_index())
+    #     self.val_dataset = MIMICDatasetPretrain(
+    #         in_df=self.full_data.loc[val_idx].reset_index())
+
+    def train_dataloader(self):
+        return DataLoader(
+            dataset=self.train_dataset,
+            collate_fn=lambda batch: self.collate_fn_pretrain(
+                batch, self.args.variable_num, self.args),
+            shuffle=True,
+            batch_size=self.args.batch_size,
+            num_workers=self.args.num_dl_workers)
+
+    def val_dataloader(self):
+        return DataLoader(
+            dataset=self.val_dataset,
+            collate_fn=lambda batch: self.collate_fn_pretrain(
+                batch, self.args.variable_num, self.args),
+            batch_size=self.args.batch_size,
+            num_workers=self.args.num_dl_workers)
+
+
 class MIMICDatasetInterp(Dataset):
     def __init__(self, in_df):
         self.in_df = in_df

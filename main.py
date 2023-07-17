@@ -1,6 +1,7 @@
 from pathlib import Path
 import traceback
 import argparse
+from experiments.exp_mimic4_pretrain import Exp_M4_Pretrain
 
 from experiments.exp_pretrain import Exp_Pretrain
 from experiments.exp_biclass import Exp_BiClass
@@ -22,6 +23,10 @@ parser.add_argument("--leit-model", default="gpts",
                              "ivp_auto", "att_ivp_vae", "ivp_auto"])
 parser.add_argument("--model-type", default="initialize",
                     choices=["initialize", "reconstruct"])
+
+parser.add_argument("--dev-mode", default="debug",
+                    choices=["debug", "gpu", "resume"])
+
 parser.add_argument("--num-dl-workers", type=int, default=32)
 parser.add_argument("--device", type=str, default="cuda")
 parser.add_argument("--exp-name", type=str, default="")
@@ -70,7 +75,7 @@ parser.add_argument("--first-dim", default="batch",
 parser.add_argument("--batch-size", type=int, default=64)
 parser.add_argument("--t-offset", type=float, default=0)
 parser.add_argument("--ml-task", default="pretrain",
-                    choices=["biclass", "extrap", "interp", "length", "pretrain"])
+                    choices=["biclass", "extrap", "interp", "length", "pretrain", "pl_pretrain"])
 parser.add_argument("--extrap-full", action='store_true')
 parser.add_argument("--p12-classify", action='store_false')
 parser.add_argument("--down-times", type=int, default=1,
@@ -287,15 +292,17 @@ if __name__ == "__main__":
         experiment = Exp_BiClass(args)
     elif args.ml_task == 'pretrain':
         experiment = Exp_Pretrain(args)
+    elif args.ml_task == 'pl_pretrain':
+        experiment = Exp_M4_Pretrain(args)
     else:
         raise ValueError("Unknown")
 
-    try:
-        experiment.run()
-        experiment.finish()
-    except Exception:
-        with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
-            print(traceback.format_exc(), file=fout)
+    # try:
+    #     experiment.run()
+    #     experiment.finish()
+    # except Exception:
+    #     with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
+    #         print(traceback.format_exc(), file=fout)
 
-    # experiment.run()
-    # experiment.finish()
+    experiment.run()
+    experiment.finish()

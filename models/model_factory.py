@@ -11,6 +11,7 @@ from models.base_models.ivpvae_components import Embedding_Linear, Embedding_MLP
 from models.base_models.embedding import Embedding_GNN
 from models.models_interp import CRU_Interp, ClassicRNN_Interp, GPTS_Interp, IVPVAE_Interp, MTAN_Interp, REDVAE_Interp
 from models.models_multiclass import CKCONV_MultiClass, ClassicRNN_MultiClass, IVPVAE_MultiClass, MTAN_MultiClass, MTANIVP_MultiClass, REDVAE_MultiClass, Raindrop_MultiClass
+from models.models_pretrain import BERT_PreTrain, GPTS_PreTrain
 from models.pl_wrapper import PL_Wrapper
 
 from utils import SolverWrapper
@@ -327,6 +328,14 @@ class ModelFactory:
 
         elif self.args.leit_model == 'classic_rnn':
             return PL_Wrapper(ClassicRNN(args=self.args), self.args)
+
+        elif self.args.leit_model == "gpts":
+            if self.args.train_obj == "gpt":
+                model = GPTS_PreTrain(args=self.args).to(self.args.device)
+            else:
+                model = BERT_PreTrain(args=self.args).to(self.args.device)
+
+            return PL_Wrapper(model, self.args)
 
         elif self.args.leit_model == 'mtan':
             encoder_z0, decoder = self._init_mtan_components()

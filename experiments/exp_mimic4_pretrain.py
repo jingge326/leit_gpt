@@ -1,39 +1,48 @@
+import copy
+import os
+import random
 from argparse import Namespace
 from pathlib import Path
 
+import numpy as np
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.loggers import WandbLogger
 import torch
 
-from experiments.data_mimic import PretrainDataModule
+from experiments.data_mimic import M4PretrainDataModule
 from models.model_factory import ModelFactory
 
 
 class Exp_M4_Pretrain():
     def __init__(self, args: Namespace):
         self.args = args
-        self.proj_path = Path(__file__).parents[1]
-        if self.args.leit_model == 'classic_rnn':
-            self.args.exp_name = '_'.join(
-                [args.leit_model, args.ml_task, args.data, args.rnn_cell, args.model_type, args.embedding_method, args.freeze_opt, str(args.train_w_reconstr), args.test_info])
-        elif self.args.leit_model == 'ivp_vae':
-            self.args.exp_name = '_'.join(
-                [args.leit_model, args.ml_task, args.data, args.ivp_solver, args.model_type, args.embedding_method, args.freeze_opt, str(args.train_w_reconstr), 'm'+str(args.train_w_mask), args.test_info])
-        elif self.args.leit_model == 'mtan':
-            self.args.exp_name = '_'.join(
-                [args.leit_model, args.ml_task, args.data, args.model_type, args.freeze_opt, str(args.train_w_reconstr), args.test_info])
-        elif self.args.leit_model == 'mtan_ivp':
-            self.args.exp_name = '_'.join(
-                [args.leit_model, args.ml_task, args.data, args.model_type, args.freeze_opt, str(args.train_w_reconstr), args.test_info])
-        elif self.args.leit_model == 'ckconv':
-            self.args.exp_name = '_'.join(
-                [args.leit_model, args.ml_task, args.data, args.model_type, args.freeze_opt, str(args.train_w_reconstr), args.test_info])
-        else:
-            raise ValueError('Leit model unknown!')
+        self.proj_path = Path(args.proj_path)
+        self.tags = [self.args.train_obj,
+                     self.args.ml_task,
+                     self.args.model_type,
+                     "nhead"+str(self.args.nhead),
+                     "nlyrs"+str(self.args.mhatt_n_layer),
+                     "bsize"+str(self.args.batch_size),
+                     args.test_info]
+
+        self.args.exp_name = '_'.join(
+            self.tags + [("r"+str(args.random_state))])
+
+        torch.manual_seed(args.random_state)
+        np.random.seed(args.random_state)
+        random.seed(args.random_state)
 
     def run(self) -> None:
+        os.environ["WANDB__SERVICE_WAIT"] = "1800"
+        logger = WandbLogger(project="leit_gpt",
+                             config=copy.deepcopy(
+                                 dict(self.args._get_kwargs())),
+                             group="_".join(self.tags),
+                             tags=self.tags,
+                             name="r"+str(self.args.random_state))
+
         checkpoint_callback = ModelCheckpoint(
             monitor="val_loss",
             dirpath=self.proj_path / 'temp/pl_checkpoint',
@@ -42,10 +51,10 @@ class Exp_M4_Pretrain():
             mode="min",
         )
         early_stop_callback = EarlyStopping(
-            monitor="val_loss", patience=5, mode="min")
+            monitor="val_loss", patience=self.args.patience, mode="min")
 
-        data_module = PretrainDataModule(self.args, self.proj_path)
-        mf = ModelFactory(self.args)
+        data_module = M4PretrainDataModule(self.args, self.proj_path, logger)
+        mf = ModelFactory(self.args, logger=logger)
         model = mf.initialize_pretrain_model()
 
         if self.args.model_type == 'reconstruct':
@@ -65,9 +74,6 @@ class Exp_M4_Pretrain():
             else:
                 model.load_state_dict(torch.load(
                     self.args.load_para_path, map_location=self.args.device))
-
-        logger = TensorBoardLogger(
-            save_dir=self.proj_path / 'log/lightning_tb_log', version=1, name=self.args.exp_name)
 
         if self.args.dev_mode == 'debug':
             trainer = pl.Trainer(
