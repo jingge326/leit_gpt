@@ -675,6 +675,12 @@ def collate_fn_biclass(batch, num_vars, args):
         value_cols.append(col.startswith("Value"))
         mask_cols.append(col.startswith("Mask"))
 
+    if args.add_cls == True:
+        # Create a dataframe with one row of ones at the beginning each sample
+        df_one = pd.DataFrame(np.ones(
+            (1, len(batch[0]["samples"].columns)), dtype="float32"), columns=batch[0]["samples"].columns)
+        df_one["Time"] = 0
+
     if args.ts_full == True:
         data_list = []
         truth_list = []
@@ -703,9 +709,13 @@ def collate_fn_biclass(batch, num_vars, args):
         len_list = []
         truth_list = []
         for b in batch:
-            values_list.append(b["samples"].loc[:, value_cols].values)
-            masks_list.append(b["samples"].loc[:, mask_cols].values)
-            ts = b["samples"]["Time"].values
+            samples = b["samples"]
+            if args.add_cls == True:
+                samples = pd.concat([df_one, samples], axis=0)
+
+            values_list.append(samples.loc[:, value_cols].values)
+            masks_list.append(samples.loc[:, mask_cols].values)
+            ts = samples["Time"].values
             times_list.append(ts)
             len_list.append(len(ts))
             truth_list.append(b["truth"])

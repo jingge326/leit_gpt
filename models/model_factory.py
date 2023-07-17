@@ -150,9 +150,6 @@ class ModelFactory:
                 diffeq_solver=diffeq_solver)
 
         elif self.args.leit_model == 'gpts':
-            return GPTS_BiClass(args=self.args)
-
-        elif self.args.leit_model == 'gpts':
             if self.args.train_obj == "bert":
                 return BERT_BiClass(args=self.args)
 
