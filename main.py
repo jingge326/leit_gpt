@@ -263,7 +263,8 @@ parser.add_argument("--n_embd", type=int, default=768)
 parser.add_argument("--seq_len_min", type=int, default=1)
 parser.add_argument("--seq_len_max", type=int, default=256)
 parser.add_argument("--bias", action='store_true')
-parser.add_argument("--gpts_output", default="last", choices=["all", "last"])
+parser.add_argument("--gpts_output", default="last",
+                    choices=["all", "last", "cls"])
 parser.add_argument(
     "--pre_model", default="gpts_pretrain_initialize_nhead12_nlyrs4_bsize64_min2_r1.pt")
 parser.add_argument("--evolve_module", default="delta_t",

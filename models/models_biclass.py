@@ -200,6 +200,8 @@ class BERT_BiClass(GPTS):
             score = self.softmax_with_mask(score, batch['exist_times'], dim=1)
             score = self.dropout(score)
             c_input = torch.sum(score * latent_states, dim=-2)
+        elif self.args.gpts_output == "cls":
+            c_input = latent_states[:, 0, :]
         else:
             exist_edge = torch.logical_xor(torch.concat([batch['exist_times'][:, 1:], torch.zeros(
                 batch['exist_times'].shape[0], 1).to(batch["data_in"])], dim=-1), batch['exist_times'])

@@ -16,7 +16,7 @@ from models.pl_wrapper import PL_Wrapper
 from utils import SolverWrapper
 from models.ivp_vae import IVPVAE
 from models.models_extrap import AttIVPVAE_Extrap, CKCONV_Extrap, CRU_Extrap, ClassicRNN_Extrap, GOB_Extrap, GPTS_Extrap, GRUD_Extrap, IVPAuto_Extrap, IVPAuto_Extrap, IVPVAE_Extrap, IVPVAE_OLD_Extrap, MTAN_Extrap, REDVAE_Extrap
-from models.models_biclass import AttIVPVAE_BiClass, ClassicRNN_BiClass, GPTS_BiClass, GRUD_BiClass, IVPAuto_BiClass, IVPVAE_OLD_BiClass, MTAN_BiClass, MTANIVP_BiClass, IVPVAE_BiClass, REDVAE_BiClass, Raindrop_BiClass, CKCONV_BiClass
+from models.models_biclass import AttIVPVAE_BiClass, BERT_BiClass, ClassicRNN_BiClass, GPTS_BiClass, GRUD_BiClass, IVPAuto_BiClass, IVPVAE_OLD_BiClass, MTAN_BiClass, MTANIVP_BiClass, IVPVAE_BiClass, REDVAE_BiClass, Raindrop_BiClass, CKCONV_BiClass
 from models.models_length import Leit_Length
 
 
@@ -150,6 +150,12 @@ class ModelFactory:
                 diffeq_solver=diffeq_solver)
 
         elif self.args.leit_model == 'gpts':
+            return GPTS_BiClass(args=self.args)
+
+        elif self.args.leit_model == 'gpts':
+            if self.args.train_obj == "bert":
+                return BERT_BiClass(args=self.args)
+
             return GPTS_BiClass(args=self.args)
 
         elif self.args.leit_model == 'ivp_vae_old':

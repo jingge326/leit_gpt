@@ -43,7 +43,7 @@ def filter_tvt(df_all, logger, args):
         )["Time"] >= 10].index
         df_all = df_all.loc[df_all.index.isin(ids_good)]
 
-    logger.info("Number of samples: {}".format(len(ids_good)))
+    logger.info("Number of samples: {}".format(df_all.index.nunique()))
 
     if args.time_max < df_all['Time'].max():
         df_all = df_all.loc[df_all['Time'] <= args.time_max]
