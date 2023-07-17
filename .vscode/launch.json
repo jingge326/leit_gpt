@@ -175,8 +175,6 @@
                 "bert",
                 "--gpts_output",
                 "all",
-                "--t-offset",
-                "1.0",
                 "--evolve_module",
                 "ivp",
                 "--mhatt_n_layer",

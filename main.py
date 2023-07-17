@@ -266,7 +266,7 @@ parser.add_argument("--bias", action='store_true')
 parser.add_argument("--gpts_output", default="last",
                     choices=["all", "last", "cls"])
 parser.add_argument(
-    "--pre_model", default="gpts_pretrain_initialize_nhead12_nlyrs4_bsize64_min2_r1.pt")
+    "--pre_model", default="bert_pretrain_initialize_nhead12_nlyrs4_bsize32_cls_r1.pt")
 parser.add_argument("--evolve_module", default="delta_t",
                     choices=["ivp", "delta_t"])
 
