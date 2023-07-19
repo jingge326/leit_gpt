@@ -249,7 +249,7 @@
                 "--model-type",
                 "reconstruct",
                 "--pre_model",
-                "bert_pretrain_initialize_nhead12_nlyrs4_bsize32_cls_r1.pt",
+                "bert_pretrain_initialize_nhead12_nlyrs4_bsize32_mm_cls_r1.pt",
                 "--train_obj",
                 "bert",
                 "--add_cls",
