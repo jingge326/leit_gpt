@@ -64,7 +64,7 @@ parser.add_argument("--data", default="m4_gpts", help="Dataset name",
                              "m4_smooth"])
 parser.add_argument("--num-samples", type=int, default=-1)
 parser.add_argument("--variable-num", type=int,
-                    default=113, choices=[96, 41, 34, 14, 113])
+                    default=113, choices=[96, 41, 34, 14, 113, 37])
 parser.add_argument("--ts-full", action='store_true')
 parser.add_argument("--del-std5", action='store_true')
 parser.add_argument("--time-scale", default="time_max",

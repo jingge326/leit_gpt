@@ -91,8 +91,9 @@ def download_and_process_p12(path_p12):
                         list_masks[-1][params_dict[param]] = 1
                         num_obs[-1][params_dict[param]] += 1
                     else:
-                        assert param == 'RecordID', 'Unexpected param {}'.format(
-                            param)
+                        print("Omitting param {}".format(param))
+                        # assert param == 'RecordID', 'Unexpected param {}'.format(
+                        #     param)
 
         arr_values = np.stack(list_vals, axis=0)
         arr_masks = np.stack(list_masks, axis=0)
