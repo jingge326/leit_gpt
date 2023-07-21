@@ -7,7 +7,7 @@ if __name__ == "__main__":
 
     list_exp = []
     list_exp.extend(
-        ["P12-Interp-BERT-IVP-CLS"])
+        ["P12-Interp-BERT-IVP-CLS-Scratch"])
 
     seeds_start = 1
     seeds_stop = 5
