@@ -7,6 +7,7 @@ from experiments.exp_pretrain import Exp_Pretrain
 from experiments.exp_biclass import Exp_BiClass
 from experiments.exp_extrap import Exp_Extrap
 from experiments.exp_interp import Exp_Interp
+from experiments.exp_synthetic import Exp_Synthetic
 
 
 parser = argparse.ArgumentParser(
@@ -18,7 +19,7 @@ parser.add_argument("--proj-path", type=str,
                     default=str(Path(__file__).parents[0]))
 parser.add_argument("--test-info", default="test")
 parser.add_argument("--leit-model", default="gpts",
-                    choices=["gpts", "ivp_vae", "ivp_vae_old", "red_vae", "classic_rnn", "mtan",
+                    choices=["gpts", "ivpattn", "ivp_vae", "ivp_vae_old", "red_vae", "classic_rnn", "mtan",
                              "raindrop", "ckconv", "cru", "gob", "grud",
                              "ivp_auto", "att_ivp_vae", "ivp_auto"])
 parser.add_argument("--model-type", default="initialize",
@@ -57,14 +58,14 @@ parser.add_argument("--log-tool", default="wandb",
 
 # Args for datasets
 parser.add_argument("--data", default="m4_gpts", help="Dataset name",
-                    choices=["m4_gpts", "m4_general", "p12", "p19_sepsis", "person_activity",
+                    choices=["synthetic", "m4_gpts", "m4_general", "p12", "p19_sepsis", "person_activity",
                              "m4_mortality_100", "m4_mortality_250", "m4_mortality_500", "m4_mortality_1000",
                              "m4_mortality_2000", "m4_mortality_3000", "m4_next", "m4_next_100", "m4_next_250",
                              "m4_next_500", "m4_next_1000", "m4_next_2000", "m4_next_3000", "eicu", "m4",
                              "m4_smooth"])
 parser.add_argument("--num-samples", type=int, default=-1)
 parser.add_argument("--variable-num", type=int,
-                    default=113, choices=[96, 41, 34, 14, 113, 37])
+                    default=113, choices=[96, 41, 34, 14, 113, 37, 1])
 parser.add_argument("--ts-full", action='store_true')
 parser.add_argument("--del-std5", action='store_true')
 parser.add_argument("--time-scale", default="time_max",
@@ -75,7 +76,7 @@ parser.add_argument("--first-dim", default="batch",
 parser.add_argument("--batch-size", type=int, default=64)
 parser.add_argument("--t-offset", type=float, default=0)
 parser.add_argument("--ml-task", default="pretrain",
-                    choices=["biclass", "extrap", "interp", "length", "pretrain", "pl_pretrain"])
+                    choices=["biclass", "extrap", "interp", "length", "pretrain", "pl_pretrain", "syn_extrap"])
 parser.add_argument("--extrap-full", action='store_true')
 parser.add_argument("--p12-classify", action='store_false')
 parser.add_argument("--down-times", type=int, default=1,
@@ -279,6 +280,8 @@ parser.add_argument("--last_ivp", action='store_true')
 parser.add_argument("--use_auxiliary_loss", action='store_true')
 parser.add_argument("--del_bad_p12", action='store_true')
 parser.add_argument("--train_obj", default="gpt", choices=["gpt", "bert"])
+parser.add_argument("--attn_types", default="ivp_causal",
+                    choices=["ivp_causal", "vanilla", "causal"])
 parser.add_argument("--add_cls", action='store_true')
 
 
@@ -294,15 +297,17 @@ if __name__ == "__main__":
         experiment = Exp_Pretrain(args)
     elif args.ml_task == 'pl_pretrain':
         experiment = Exp_M4_Pretrain(args)
+    elif args.ml_task == 'syn_extrap':
+        experiment = Exp_Synthetic(args)
     else:
         raise ValueError("Unknown")
 
-    try:
-        experiment.run()
-        experiment.finish()
-    except Exception:
-        with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
-            print(traceback.format_exc(), file=fout)
+    # try:
+    #     experiment.run()
+    #     experiment.finish()
+    # except Exception:
+    #     with open(experiment.proj_path/"log"/"err_{}.log".format(experiment.args.exp_name), "w") as fout:
+    #         print(traceback.format_exc(), file=fout)
 
-    # experiment.run()
-    # experiment.finish()
+    experiment.run()
+    experiment.finish()

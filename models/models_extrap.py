@@ -15,10 +15,53 @@ from models.baselines.grud import GRUD
 from models.baselines.mtan import MTAN
 from models.baselines.red_vae import REDVAE
 from models.gpts import GPTS
+from models.ivp_attn import IVPAttn
 from models.ivp_auto import IVPAuto
 from models.ivp_vae import IVPVAE
 from models.ivpvae_old import IVPVAE_OLD
 from utils import log_lik_gaussian_simple
+
+
+class IVPAttn_Extrap(IVPAttn):
+    def __init__(self, args):
+        super().__init__(args)
+
+        if args.extrap_method == 'mlp':
+            self.extrap_mlp = MLP(
+                in_dim=args.n_embd + 1,
+                hidden_dims=[128, 128],
+                out_dim=args.latent_dim,
+                activation='ReLU',
+                final_activation='ReLU')
+
+        self.rec_lyr = nn.Sequential(
+            nn.Linear(args.latent_dim, 100),
+            nn.Tanh(),
+            nn.Linear(100, args.variable_num * 2))
+
+    def compute_prediction_results(self, batch):
+        results = self.forward(batch)
+
+        final_states = results["latent_states"][:, [-1], :]
+
+        delta_ts = batch["times_out"] - batch["times_in"][:, [-1]]
+
+        p_vec = self.rec_lyr(self.extrap_mlp(torch.cat((final_states.repeat(
+            1, delta_ts.shape[-1], 1), delta_ts.unsqueeze(-1)), dim=-1)))
+
+        m, v = torch.chunk(p_vec, 2, dim=-1)
+
+        truth = batch['data_out'].reshape(m.shape)
+        loss = log_lik_gaussian_simple(truth, m, v).mean()
+        mse = torch.pow(truth - m, 2).sum()/len(truth)
+
+        results["loss"] = loss
+        results["mse"] = mse
+
+        return results
+
+    def run_validation(self, batch):
+        return self.compute_prediction_results(batch)
 
 
 class GPTS_Extrap(GPTS):

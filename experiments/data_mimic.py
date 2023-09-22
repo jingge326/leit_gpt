@@ -673,6 +673,32 @@ class DatasetExtrap(Dataset):
         return {"idx": idx, "truth": val_samples, "samples": samples}
 
 
+class DatasetSynthExtrap(Dataset):
+    def __init__(self, in_df, val_options):
+
+        self.in_df = in_df
+        self.val_options = val_options
+        self.variable_num = 1
+
+        ids = self.in_df.loc[:, "id"].unique()
+        self.length = len(ids)
+
+        map_dict = dict(zip(ids, range(self.length)))
+
+        self.in_df.loc[:, "id"] = self.in_df.loc[:, "id"].map(map_dict)
+
+        self.in_df.set_index("id", inplace=True)
+
+    def __len__(self):
+        return self.length
+
+    def __getitem__(self, idx):
+        samples = self.in_df.loc[idx].iloc[:self.val_options["N_val"], :]
+        val_samples = self.in_df.loc[idx].iloc[self.val_options["N_val"]:, :]
+
+        return {"idx": idx, "truth": val_samples, "samples": samples}
+
+
 class DatasetInterp(Dataset):
     def __init__(self, in_df):
 
@@ -1090,6 +1116,55 @@ def collate_fn_extrap(batch, num_vars, args):
             mask_extrap[:, :times_in.size(1)] = times_in.gt(
                 torch.zeros_like(times_in))
             data_dict["mask_extrap"] = mask_extrap
+
+    return data_dict
+
+
+def collate_fn_syn_extrap(batch, num_vars, args):
+    device = args.device
+    values_in_list = []
+    ts_in_list = []
+    len_in_list = []
+    values_out_list = []
+    ts_out_list = []
+    len_out_list = []
+    for b in batch:
+        values_in = b["samples"]["values"].values
+        ts_in = b["samples"]["times"].values
+        values_out = b["truth"]["values"].values
+        ts_out = b["truth"]["times"].values
+        values_in_list.append(values_in)
+        ts_in_list.append(ts_in)
+        len_in_list.append(len(ts_in))
+        values_out_list.append(values_out)
+        ts_out_list.append(ts_out)
+        len_out_list.append(len(ts_out))
+
+    # shape = (batch_size, maximum sequence length, variables)
+    data_in = torch.from_numpy(
+        np.stack(values_in_list, 0,).astype(np.float32)).to(device)
+
+    # shape = (batch_size, maximum sequence length)
+    times_in = torch.from_numpy(
+        np.stack(ts_in_list, 0,).astype(np.float32)).to(device)
+
+    # shape = (batch_size, maximum sequence length, variables)
+    data_out = torch.from_numpy(np.stack(values_out_list, 0,)).to(device)
+
+    # shape = (batch_size, maximum sequence length)
+    times_out = torch.from_numpy(
+        np.stack(ts_out_list, 0,).astype(np.float32)).to(device)
+
+    lengths_in = torch.tensor(len_in_list).to(device)
+    lengths_out = torch.tensor(len_out_list).to(device)
+
+    data_dict = {}
+    data_dict["times_in"] = times_in
+    data_dict["data_in"] = data_in
+    data_dict["lengths_in"] = lengths_in
+    data_dict["times_out"] = times_out
+    data_dict["data_out"] = data_out
+    data_dict["lengths_out"] = lengths_out
 
     return data_dict
 

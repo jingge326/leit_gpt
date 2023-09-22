@@ -15,9 +15,10 @@ import torch
 from torch import Tensor
 from torch.utils.data import DataLoader
 from experiments.data_eicu import get_eicu_tvt_datasets
-from experiments.data_mimic import collate_fn_biclass, collate_fn_extrap, collate_fn_interp, get_m4_tvt_datasets
+from experiments.data_mimic import collate_fn_biclass, collate_fn_extrap, collate_fn_interp, collate_fn_syn_extrap, get_m4_tvt_datasets
 from experiments.data_physionet12 import get_p12_tvt_datasets
 from experiments.data_physionet19 import get_p19_tvt_datasets
+from experiments.data_synthetic import get_synthetic_tvt_datasets
 from models.model_factory import ModelFactory
 
 from utils import record_experiment
@@ -45,6 +46,8 @@ class BaseExperiment:
         elif self.args.leit_model == 'ivp_vae':
             self.args.exp_name = '_'.join(
                 [name_base, args.ivp_solver, str(args.train_w_reconstr), str(args.train_w_mask), args.test_info])
+        elif self.args.leit_model == 'ivpattn':
+            self.args.exp_name = '_'.join([name_base, args.attn_types])
         else:
             self.args.exp_name = '_'.join(
                 [name_base, args.test_info])
@@ -162,6 +165,9 @@ class BaseExperiment:
         elif re.match("eicu", self.args.data):
             train_data, val_data, test_data = get_eicu_tvt_datasets(
                 self.args, self.proj_path, self.logger)
+        elif re.match("synthetic", self.args.data):
+            train_data, val_data, test_data = get_synthetic_tvt_datasets(
+                self.args, self.proj_path, self.logger)
         else:
             raise ValueError("Unsupported Dataset!")
 
@@ -171,6 +177,8 @@ class BaseExperiment:
             collate_fn = collate_fn_interp
         elif self.args.ml_task == 'biclass':
             collate_fn = collate_fn_biclass
+        elif self.args.ml_task == 'syn_extrap':
+            collate_fn = collate_fn_syn_extrap
         else:
             raise ValueError("Unknown")
 

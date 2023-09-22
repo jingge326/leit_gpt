@@ -1,6 +1,6 @@
 #!/bin/bash
 
-args_in="--random-state=1;--data=p12;--variable-num=37;--time-max=2880;--time-scale=none;--ml-task=interp;--model-type=reconstruct;--pre_model=bert_pretrain_initialize_nhead12_nlyrs4_bsize32_mm_cls_r1.pt;--train_obj=bert;--add_cls;--gpts_output=cls;--t-offset=1.0;--times-drop=0.1;--del_bad_p12;--evolve_module=ivp;--mhatt_n_layer=4;--n_embd=240;--batch-size=32;--patience=10;--test-info=v37_bert_cls"
+args_in="--random-state=1;--leit-model=ivpattn;--ml-task=extrap;--data=synthetic;--ml-task=syn_extrap;--hidden-layers=1;--log-tool=logging;--variable-num=1;--nhead=8;--test-info=testing"
 
 main="/home/xiao/project/leit_gpt/main.py"
 
