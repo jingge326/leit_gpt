@@ -785,8 +785,10 @@
                 "1",
                 "--nhead",
                 "8",
+                "--device",
+                "cuda:1",
                 "--test-info",
-                "testing"
+                "degub"
             ],
             "console": "integratedTerminal"
         },
@@ -816,6 +818,8 @@
                 "1",
                 "--nhead",
                 "8",
+                "--device",
+                "cuda:1",
                 "--test-info",
                 "testing"
             ],

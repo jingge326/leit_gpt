@@ -42,7 +42,10 @@ class IVPAttn_Extrap(IVPAttn):
     def compute_prediction_results(self, batch):
         results = self.forward(batch)
 
-        final_states = results["latent_states"][:, [-1], :]
+        if self.args.attn_types == "vanilla":
+            final_states = results["latent_states"].mean(dim=1, keepdim=True)
+        else:
+            final_states = results["latent_states"][:, [-1], :]
 
         delta_ts = batch["times_out"] - batch["times_in"][:, [-1]]
 
